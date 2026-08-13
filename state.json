@@ -1,18 +1,10 @@
 {
-  "equity": 9879.877357782501,
+  "equity": 10076.752848062502,
   "start_equity": 10000.0,
-  "peak_equity": 10000.0,
+  "peak_equity": 10076.752848062502,
   "created": "2026-07-06",
-  "last_run": "2026-08-12",
+  "last_run": "2026-08-13",
   "open_positions": {
-    "JPM": {
-      "entry": 343.15,
-      "sl": 331.47,
-      "tp": 366.5,
-      "shares": 8.5616,
-      "risk_amount": 100.0,
-      "entry_date": "2026-07-17"
-    },
     "JNJ": {
       "entry": 259.27,
       "sl": 250.16,
@@ -52,6 +44,16 @@
       "shares": 5.7308,
       "risk_amount": 98.8,
       "entry_date": "2026-08-11"
+    },
+    "JPM": {
+      "entry": 363.11,
+      "sl": 353.38,
+      "tp": 382.57,
+      "shares": 10.3564,
+      "risk_amount": 100.77,
+      "risk_pct": 1.0,
+      "score": 3,
+      "entry_date": "2026-08-13"
     }
   },
   "closed_trades": [
@@ -131,6 +133,19 @@
       "outcome": "TP",
       "pnl": 195.17,
       "equity_after": 9879.88
+    },
+    {
+      "ticker": "JPM",
+      "entry_date": "2026-07-17",
+      "exit_date": "2026-08-13",
+      "entry": 343.15,
+      "exit": 366.5,
+      "shares": 8.5616,
+      "outcome": "TP",
+      "pnl": 196.88,
+      "equity_after": 10076.75,
+      "score": "",
+      "risk_pct": ""
     }
   ],
   "equity_history": [
@@ -223,6 +238,11 @@
       "date": "2026-08-12",
       "cash_equity": 9879.88,
       "mtm_equity": 10131.55
+    },
+    {
+      "date": "2026-08-13",
+      "cash_equity": 10076.75,
+      "mtm_equity": 10106.98
     }
   ],
   "cooldowns": {}
