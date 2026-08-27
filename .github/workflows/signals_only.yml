@@ -1,0 +1,45 @@
+name: Señales Diarias (paralelo)
+
+# Corre 15 min DESPUES del paper trader (22:15 UTC) para no chocar con su
+# commit al repositorio. Mismos dias habiles.
+on:
+  schedule:
+    - cron: '15 22 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  signals:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: pip install yfinance pandas numpy
+
+      - name: Correr el feed de señales
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python signals_only.py
+
+      - name: Guardar el estado de señales
+        run: |
+          git config user.name "signals-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git pull --rebase --autostash 2>/dev/null || true
+          git add signals_state.json 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "Sin cambios que guardar hoy."
+          else
+            git commit -m "Estado señales $(date -u +%Y-%m-%d)"
+            git push
+          fi
