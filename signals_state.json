@@ -1,0 +1,21 @@
+{
+  "last_run": "2026-08-28",
+  "active_signals": {
+    "AAPL": 3,
+    "MSFT": 3,
+    "NVDA": 3,
+    "AMZN": 3,
+    "JPM": 3,
+    "BAC": 3,
+    "V": 4,
+    "JNJ": 4,
+    "PFE": 4,
+    "XOM": 4,
+    "CVX": 4,
+    "KO": 4,
+    "^GSPC": 3,
+    "^NDX": 3,
+    "^DJI": 3,
+    "^RUT": 3
+  }
+}
