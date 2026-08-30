@@ -1,0 +1,46 @@
+name: Paper Trading Trailing (paralelo)
+
+# Corre 30 min despues del paper trader fijo (22:30 UTC) para no chocar con
+# sus commits. Mismos dias habiles.
+on:
+  schedule:
+    - cron: '30 22 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  paper-trade-trailing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: pip install yfinance pandas numpy
+
+      - name: Correr el paper trader trailing
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python paper_trader_trailing.py
+
+      - name: Guardar el estado
+        run: |
+          git config user.name "trailing-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git pull --rebase --autostash 2>/dev/null || true
+          git add state_trailing.json 2>/dev/null || true
+          git add trades_trailing.csv 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "Sin cambios que guardar hoy."
+          else
+            git commit -m "Estado trailing $(date -u +%Y-%m-%d)"
+            git push
+          fi
