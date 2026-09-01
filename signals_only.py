@@ -12,6 +12,13 @@
    3. Avisa por Telegram lo que CAMBIO (señales nuevas y desaparecidas)
       + la lista vigente completa como referencia.
 
+ DESTINATARIOS: usa TELEGRAM_CHAT_ID_SIGNALS si existe (pensado para un
+ CANAL de difusion). Si no existe, cae a TELEGRAM_CHAT_ID (retrocompatible).
+ Ambos aceptan uno o varios IDs separados por comas. Un canal es un ID
+ negativo que empieza con -100; el bot debe ser admin del canal.
+ Asi el feed de señales puede ir a un canal publico mientras los paper
+ traders siguen mandando a tu chat privado (TELEGRAM_CHAT_ID).
+
  Usa un state propio y pequeño (signals_state.json) solo para recordar
  que señales habia ayer y no repetirlas. Independiente del state.json
  del paper trader. La regla de entrada es la misma de screener.py.
@@ -34,8 +41,6 @@ SIG_CONFIG = {
     **CONFIG,
     "regime_ticker": "^GSPC",
     "lookback": "1y",
-    # True  = avisa solo lo que cambio (nuevas/desaparecidas) + lista vigente.
-    # False = manda todas las señales vigentes cada dia (mas ruidoso).
     "only_new": True,
 }
 
@@ -50,7 +55,7 @@ def load_state():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE) as f:
             return json.load(f)
-    return {"last_run": None, "active_signals": {}}   # ticker -> score
+    return {"last_run": None, "active_signals": {}}
 
 
 def save_state(state):
@@ -63,7 +68,6 @@ def save_state(state):
 # =============================================================================
 
 def analyze_sp500(cfg, df):
-    """Regimen + distancia a EMA200 + score propio del indice."""
     if df is None or df.empty:
         return None
     d = enrich(df.copy(), cfg)
@@ -73,10 +77,8 @@ def analyze_sp500(cfg, df):
     dist_pct = (price - ema200) / ema200 * 100
     res = evaluate(d, cfg)
     return {
-        "price": round(price, 2),
-        "ema200": round(ema200, 2),
-        "dist_pct": round(dist_pct, 1),
-        "bullish": price > ema200,
+        "price": round(price, 2), "ema200": round(ema200, 2),
+        "dist_pct": round(dist_pct, 1), "bullish": price > ema200,
         "score": res["score"] if res else 0,
         "is_signal": bool(res and res["is_signal"]),
     }
@@ -87,7 +89,6 @@ def analyze_sp500(cfg, df):
 # =============================================================================
 
 def scan(cfg, cache):
-    """Devuelve {ticker: {score, entry, sl, tp}} de todo lo que da señal."""
     signals = {}
     for t in cfg["tickers"]:
         df = cache.get(t)
@@ -96,17 +97,14 @@ def scan(cfg, cache):
         d = enrich(df.copy(), cfg)
         res = evaluate(d, cfg)
         if res and res["is_signal"]:
-            signals[t] = {
-                "score": res["score"],
-                "entry": res["entry"], "sl": res["sl"], "tp": res["tp"],
-            }
+            signals[t] = {"score": res["score"], "entry": res["entry"],
+                          "sl": res["sl"], "tp": res["tp"]}
     return signals
 
 
 def download_all(cfg):
     cache = {}
-    tickers = list(dict.fromkeys(cfg["tickers"] + [cfg["regime_ticker"]]))
-    for t in tickers:
+    for t in list(dict.fromkeys(cfg["tickers"] + [cfg["regime_ticker"]])):
         try:
             df = yf.Ticker(t).history(period=cfg["lookback"], interval=cfg["interval"])
             cache[t] = df if not df.empty else None
@@ -128,10 +126,9 @@ def run(cfg=SIG_CONFIG):
 
     cache = download_all(cfg)
     sp = analyze_sp500(cfg, cache.get(cfg["regime_ticker"]))
-    current = scan(cfg, cache)                 # {ticker: {...}}
-    previous = state.get("active_signals", {})  # {ticker: score}
+    current = scan(cfg, cache)
+    previous = state.get("active_signals", {})
 
-    # Cambios respecto a ayer
     new = {t: v for t, v in current.items() if t not in previous}
     dropped = [t for t in previous if t not in current]
     upgraded = {t: v for t, v in current.items()
@@ -141,7 +138,6 @@ def run(cfg=SIG_CONFIG):
     print(summary)
     send_telegram(summary)
 
-    # Guarda el estado nuevo (solo ticker -> score)
     state["active_signals"] = {t: v["score"] for t, v in current.items()}
     state["last_run"] = today
     save_state(state)
@@ -159,7 +155,6 @@ def fmt_sig(t, v):
 def build_summary(cfg, today, sp, current, new, dropped, upgraded):
     lines = [f"SEÑALES (paralelo) | {today}"]
 
-    # --- Termometro S&P 500 ---
     if sp:
         estado = "ALCISTA ✓" if sp["bullish"] else "BAJISTA ✗"
         lines.append(
@@ -175,7 +170,6 @@ def build_summary(cfg, today, sp, current, new, dropped, upgraded):
     n3 = sum(1 for v in current.values() if v["score"] == 3)
     lines.append(f"Señales vigentes: {len(current)} ({n4} de 4/4, {n3} de 3/4)")
 
-    # --- Cambios ---
     if new:
         lines.append("--- NUEVAS hoy ---")
         for t, v in sorted(new.items(), key=lambda x: -x[1]["score"]):
@@ -190,7 +184,6 @@ def build_summary(cfg, today, sp, current, new, dropped, upgraded):
     if not (new or upgraded or dropped):
         lines.append("Sin cambios respecto a ayer.")
 
-    # --- Lista vigente completa (referencia) ---
     show_all = (not cfg["only_new"]) or new or upgraded
     if current and show_all:
         lines.append("--- Todas las vigentes ---")
@@ -200,20 +193,41 @@ def build_summary(cfg, today, sp, current, new, dropped, upgraded):
     return "\n".join(lines)
 
 
+# =============================================================================
+# TELEGRAM  (canal para señales, con fallback al chat privado)
+# =============================================================================
+
+def parse_recipients(raw):
+    if not raw:
+        return []
+    return [r.strip() for r in raw.split(",") if r.strip()]
+
+
 def send_telegram(text):
+    """
+    Manda al CANAL de señales (TELEGRAM_CHAT_ID_SIGNALS) si esta definido;
+    si no, cae al chat de siempre (TELEGRAM_CHAT_ID). Varios IDs por coma.
+    Si un destinatario falla, sigue con los demas.
+    """
     token = os.environ.get("TELEGRAM_TOKEN")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
-    if not token or not chat_id:
+    raw = os.environ.get("TELEGRAM_CHAT_ID_SIGNALS") or os.environ.get("TELEGRAM_CHAT_ID")
+    recipients = parse_recipients(raw)
+    if not token or not recipients:
         print("(Telegram no configurado; omitiendo alerta)")
         return
-    try:
-        import urllib.request, urllib.parse
-        url = f"https://api.telegram.org/bot{token}/sendMessage"
-        data = urllib.parse.urlencode({"chat_id": chat_id, "text": text}).encode()
-        urllib.request.urlopen(urllib.request.Request(url, data=data), timeout=15)
-        print("(Alerta enviada a Telegram)")
-    except Exception as e:
-        print(f"(Fallo al enviar Telegram: {e})")
+
+    import urllib.request, urllib.parse
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    ok, fail = 0, 0
+    for chat_id in recipients:
+        try:
+            data = urllib.parse.urlencode({"chat_id": chat_id, "text": text}).encode()
+            urllib.request.urlopen(urllib.request.Request(url, data=data), timeout=15)
+            ok += 1
+        except Exception as e:
+            fail += 1
+            print(f"(Fallo al enviar a {chat_id}: {e})")
+    print(f"(Enviado a {ok} destinatario(s); {fail} fallaron)")
 
 
 if __name__ == "__main__":
