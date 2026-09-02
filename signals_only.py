@@ -1,27 +1,19 @@
 """
 =============================================================================
- SIGNALS ONLY - Feed de señales puro (corre EN PARALELO al paper trader)
+ SIGNALS ONLY - Feed de señales publico (corre EN PARALELO al paper trader)
 =============================================================================
- NO simula cuenta, NO abre posiciones, NO tiene topes de cartera. Solo
- detecta y avisa TODAS las señales que la estrategia genera (3/4 y 4/4),
- incluidas las que el paper trader ignora por falta de cupo de riesgo.
+ NO simula cuenta, NO abre posiciones. Escanea los tickers con la MISMA
+ regla del screener y publica un mensaje visual, en ingles, pensado para
+ un canal publico.
 
- Cada corrida:
-   1. Analiza el S&P 500 (regimen + su propio score) -> el termometro.
-   2. Escanea los 22 tickers con la MISMA regla del screener.
-   3. Avisa por Telegram lo que CAMBIO (señales nuevas y desaparecidas)
-      + la lista vigente completa como referencia.
+ FORMATO: muestra solo las señales NUEVAS del dia como "setups
+ de hoy" (no re-lista las que ya venian de dias previos), para evitar que
+ el publico se confunda con valores recalculados de operaciones ya abiertas.
+ Internamente sigue recordando todas las vigentes para detectar cuales son
+ nuevas mañana.
 
- DESTINATARIOS: usa TELEGRAM_CHAT_ID_SIGNALS si existe (pensado para un
- CANAL de difusion). Si no existe, cae a TELEGRAM_CHAT_ID (retrocompatible).
- Ambos aceptan uno o varios IDs separados por comas. Un canal es un ID
- negativo que empieza con -100; el bot debe ser admin del canal.
- Asi el feed de señales puede ir a un canal publico mientras los paper
- traders siguen mandando a tu chat privado (TELEGRAM_CHAT_ID).
-
- Usa un state propio y pequeño (signals_state.json) solo para recordar
- que señales habia ayer y no repetirlas. Independiente del state.json
- del paper trader. La regla de entrada es la misma de screener.py.
+ DESTINATARIOS: usa TELEGRAM_CHAT_ID_SIGNALS si existe (el CANAL); si no,
+ cae a TELEGRAM_CHAT_ID. Varios IDs por coma. El bot debe ser admin del canal.
 =============================================================================
 """
 
@@ -33,22 +25,26 @@ import yfinance as yf
 from screener import enrich, evaluate, CONFIG
 
 
-# =============================================================================
-# CONFIGURACIÓN
-# =============================================================================
-
 SIG_CONFIG = {
     **CONFIG,
     "regime_ticker": "^GSPC",
     "lookback": "1y",
-    "only_new": True,
 }
 
 STATE_FILE = "signals_state.json"
 
+MONTHS = ["January", "February", "March", "April", "May", "June", "July",
+          "August", "September", "October", "November", "December"]
+
+DISCLAIMER = ("⚠️ This is NOT financial advice. Educational information only. "
+              "Trading involves risk of loss. You are responsible for your "
+              "own decisions.")
+
+DIV = "━━━━━━━━━━━━━━━━━━"
+
 
 # =============================================================================
-# ESTADO (minimo: solo recuerda las señales de ayer)
+# ESTADO
 # =============================================================================
 
 def load_state():
@@ -64,7 +60,7 @@ def save_state(state):
 
 
 # =============================================================================
-# ANÁLISIS DEL S&P 500 (el termometro)
+# ANÁLISIS S&P 500
 # =============================================================================
 
 def analyze_sp500(cfg, df):
@@ -72,20 +68,16 @@ def analyze_sp500(cfg, df):
         return None
     d = enrich(df.copy(), cfg)
     last = d.iloc[-1]
-    ema200 = float(last["ema_trend"])
-    price = float(last["Close"])
-    dist_pct = (price - ema200) / ema200 * 100
-    res = evaluate(d, cfg)
+    ema200 = float(last["ema_trend"]); price = float(last["Close"])
     return {
-        "price": round(price, 2), "ema200": round(ema200, 2),
-        "dist_pct": round(dist_pct, 1), "bullish": price > ema200,
-        "score": res["score"] if res else 0,
-        "is_signal": bool(res and res["is_signal"]),
+        "price": round(price, 2),
+        "dist_pct": round((price - ema200) / ema200 * 100, 1),
+        "bullish": price > ema200,
     }
 
 
 # =============================================================================
-# ESCANEO DE SEÑALES
+# ESCANEO
 # =============================================================================
 
 def scan(cfg, cache):
@@ -129,12 +121,14 @@ def run(cfg=SIG_CONFIG):
     current = scan(cfg, cache)
     previous = state.get("active_signals", {})
 
-    new = {t: v for t, v in current.items() if t not in previous}
-    dropped = [t for t in previous if t not in current]
-    upgraded = {t: v for t, v in current.items()
-                if t in previous and v["score"] > previous.get(t, 0)}
+    # Opcion A: solo lo NUEVO (no estaba ayer) o que SUBIO a 4/4
+    fresh = {}
+    for t, v in current.items():
+        was = previous.get(t)
+        if was is None or v["score"] > was:
+            fresh[t] = v
 
-    summary = build_summary(cfg, today, sp, current, new, dropped, upgraded)
+    summary = build_public_message(today, sp, fresh)
     print(summary)
     send_telegram(summary)
 
@@ -145,56 +139,65 @@ def run(cfg=SIG_CONFIG):
 
 
 # =============================================================================
-# RESUMEN
+# MENSAJE PÚBLICO (ingles, visual, opcion A)
 # =============================================================================
 
-def fmt_sig(t, v):
-    return f"  {t}: {v['score']}/4 | entrada {v['entry']} | SL {v['sl']} | TP {v['tp']}"
+def fmt_date(today_str):
+    y, m, d = today_str.split("-")
+    return f"{MONTHS[int(m)-1]} {int(d)}, {y}"
 
 
-def build_summary(cfg, today, sp, current, new, dropped, upgraded):
-    lines = [f"SEÑALES (paralelo) | {today}"]
+def fmt_setup(ticker, v):
+    return (f"  {ticker}\n"
+            f"     Entry: ${v['entry']:,.2f}\n"
+            f"     🛑 Stop Loss: ${v['sl']:,.2f}\n"
+            f"     🎯 Take Profit: ${v['tp']:,.2f}")
 
+
+def build_public_message(today, sp, fresh):
+    lines = ["📊 TRADING SIGNALS", f"📅 {fmt_date(today)}", ""]
+
+    # Estado del mercado
     if sp:
-        estado = "ALCISTA ✓" if sp["bullish"] else "BAJISTA ✗"
-        lines.append(
-            f"S&P500: {sp['price']} | {estado} | "
-            f"{'+' if sp['dist_pct']>=0 else ''}{sp['dist_pct']}% vs EMA200 | "
-            f"score {sp['score']}/4")
-        if not sp["bullish"]:
-            lines.append("  (Regimen bajista: la estrategia larga estaria dormida)")
+        if sp["bullish"]:
+            lines.append("🌎 Market (S&P 500): 🟢 Bullish")
+            lines.append(f"   +{sp['dist_pct']}% above yearly average")
+        else:
+            lines.append("🌎 Market (S&P 500): 🔴 Bearish")
+            lines.append(f"   {sp['dist_pct']}% below yearly average")
+            lines.append("   ⚠️ Caution: broad trend is down")
     else:
-        lines.append("S&P500: sin datos hoy")
+        lines.append("🌎 Market (S&P 500): data unavailable")
 
-    n4 = sum(1 for v in current.values() if v["score"] == 4)
-    n3 = sum(1 for v in current.values() if v["score"] == 3)
-    lines.append(f"Señales vigentes: {len(current)} ({n4} de 4/4, {n3} de 3/4)")
+    lines.append(DIV)
 
-    if new:
-        lines.append("--- NUEVAS hoy ---")
-        for t, v in sorted(new.items(), key=lambda x: -x[1]["score"]):
-            lines.append(fmt_sig(t, v))
-    if upgraded:
-        lines.append("--- SUBIERON a 4/4 ---")
-        for t, v in upgraded.items():
-            lines.append(fmt_sig(t, v))
-    if dropped:
-        lines.append("--- DESAPARECIERON ---")
-        lines.append("  " + ", ".join(dropped))
-    if not (new or upgraded or dropped):
-        lines.append("Sin cambios respecto a ayer.")
+    strong = {t: v for t, v in fresh.items() if v["score"] == 4}
+    moderate = {t: v for t, v in fresh.items() if v["score"] == 3}
 
-    show_all = (not cfg["only_new"]) or new or upgraded
-    if current and show_all:
-        lines.append("--- Todas las vigentes ---")
-        for t, v in sorted(current.items(), key=lambda x: -x[1]["score"]):
-            lines.append(fmt_sig(t, v))
+    if not fresh:
+        lines.append("")
+        lines.append("No new setups today.")
+        lines.append("")
+    else:
+        if strong:
+            lines.append("🟢 STRONG SETUPS (4/4)")
+            lines.append("")
+            for t, v in sorted(strong.items()):
+                lines.append(fmt_setup(t, v)); lines.append("")
+        if moderate:
+            lines.append("🟡 MODERATE SETUPS (3/4)")
+            lines.append("")
+            for t, v in sorted(moderate.items()):
+                lines.append(fmt_setup(t, v)); lines.append("")
 
+    lines.append(DIV)
+    lines.append("")
+    lines.append(DISCLAIMER)
     return "\n".join(lines)
 
 
 # =============================================================================
-# TELEGRAM  (canal para señales, con fallback al chat privado)
+# TELEGRAM (canal para señales, fallback al chat privado)
 # =============================================================================
 
 def parse_recipients(raw):
@@ -204,18 +207,12 @@ def parse_recipients(raw):
 
 
 def send_telegram(text):
-    """
-    Manda al CANAL de señales (TELEGRAM_CHAT_ID_SIGNALS) si esta definido;
-    si no, cae al chat de siempre (TELEGRAM_CHAT_ID). Varios IDs por coma.
-    Si un destinatario falla, sigue con los demas.
-    """
     token = os.environ.get("TELEGRAM_TOKEN")
     raw = os.environ.get("TELEGRAM_CHAT_ID_SIGNALS") or os.environ.get("TELEGRAM_CHAT_ID")
     recipients = parse_recipients(raw)
     if not token or not recipients:
         print("(Telegram no configurado; omitiendo alerta)")
         return
-
     import urllib.request, urllib.parse
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     ok, fail = 0, 0
