@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-09-01",
+  "last_run": "2026-09-02",
   "active_signals": {
     "AAPL": 3,
     "MSFT": 4,
@@ -9,12 +9,12 @@
     "BAC": 4,
     "V": 4,
     "JNJ": 4,
+    "UNH": 3,
     "PFE": 4,
     "XOM": 4,
-    "CVX": 4,
+    "CVX": 3,
     "KO": 4,
     "^GSPC": 3,
-    "^NDX": 3,
-    "^DJI": 3
+    "^NDX": 3
   }
 }
