@@ -29,6 +29,7 @@ jobs:
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_CHAT_ID_SIGNALS: ${{ secrets.TELEGRAM_CHAT_ID_SIGNALS }}
         run: python signals_only.py
 
       - name: Guardar el estado de señales
