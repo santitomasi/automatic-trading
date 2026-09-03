@@ -6,19 +6,16 @@
  entrada (regla larga de screener.py), mismos controles de cartera, PERO
  salida por TRAILING STOP en vez de objetivo fijo 1:2.
 
- DIFERENCIAS con el paper trader fijo:
-   - Salida: stop inicial a 3.5*ATR, que PERSIGUE al precio hacia arriba
-     (nunca baja). Sin take profit fijo -> deja correr las tendencias.
-   - Stop temporal: 120 dias habiles (red de seguridad larga), NO 40.
-     El de 40 cortaria justo las corridas largas que dan la ventaja al
-     trailing. El trailing ya limpia solo las posiciones estancadas.
-   - Enfriamiento: solo tras una salida PERDEDORA (una salida ganadora
-     significa que la tendencia maduro; reentrar con nueva señal es OK).
+ DIFERENCIAS con el fijo: salida por trailing 3.5 ATR (sin TP fijo), stop
+ temporal de 120 dias (no 40), y enfriamiento solo tras salida perdedora.
 
- Estado propio (state_trailing.json) y CSV propio (trades_trailing.csv),
- independientes del sistema fijo. Telegram etiquetado "TRAILING".
- Todo lo demas (regimen, topes, riesgo dinamico, mtm) es identico al fijo
- para que la comparacion sea justa: solo cambia el mecanismo de salida.
+ FIX (v2): blindaje contra precios "nan". yfinance a veces devuelve la
+ ultima fila con Close=nan (dia sin cerrar o hueco de datos). Antes eso
+ contaminaba PnL, R y valor de mercado (todo salia "nan"). Ahora se usa
+ SIEMPRE el ultimo precio VALIDO (last_valid_close), y si no hay ninguno,
+ la posicion se reporta sin precio en vez de romper el mensaje.
+
+ Estado propio (state_trailing.json) y CSV propio (trades_trailing.csv).
 =============================================================================
 """
 
@@ -28,6 +25,7 @@ import csv
 from datetime import datetime, timezone
 
 import numpy as np
+import pandas as pd
 import yfinance as yf
 from screener import enrich, evaluate, CONFIG
 
@@ -41,18 +39,14 @@ PT_CONFIG = {
     "start_equity": 10000.0,
     "cost_pct": 0.05,
     "lookback": "1y",
-
     "risk_by_score": {3: 0.01, 4: 0.02},
     "min_position_risk": 0.005,
-
     "max_total_risk": 0.06,
     "max_per_sector": 2,
     "regime_ticker": "^GSPC",
     "cooldown_bars": 5,
-
-    # --- Especifico del trailing --------------------------------------------
-    "trail_mult": 3.5,          # distancia del trailing stop, en ATR
-    "time_stop_bars": 120,      # red de seguridad larga (NO 40)
+    "trail_mult": 3.5,
+    "time_stop_bars": 120,
 }
 
 SECTORS = {
@@ -69,6 +63,26 @@ STATE_FILE = "state_trailing.json"
 TRADES_CSV = "trades_trailing.csv"
 CSV_FIELDS = ["ticker", "entry_date", "exit_date", "entry", "exit", "shares",
               "outcome", "pnl", "R", "equity_after", "score", "risk_pct", "bars_held"]
+
+
+# =============================================================================
+# HELPERS DE PRECIO (blindados contra nan)
+# =============================================================================
+
+def last_valid_close(df):
+    """Ultimo cierre VALIDO (descarta nan). None si no hay ninguno."""
+    if df is None or df.empty:
+        return None
+    s = df["Close"].dropna()
+    return float(s.iloc[-1]) if not s.empty else None
+
+
+def last_valid_row(df):
+    """Ultima fila con High/Low/Close validos (para chequear salidas)."""
+    if df is None or df.empty:
+        return None
+    d = df.dropna(subset=["High", "Low", "Close"])
+    return d.iloc[-1] if not d.empty else None
 
 
 # =============================================================================
@@ -106,7 +120,7 @@ def append_csv(trade):
 
 
 # =============================================================================
-# GESTIÓN DE RIESGO (identica al fijo)
+# GESTIÓN DE RIESGO
 # =============================================================================
 
 def current_total_risk(state):
@@ -120,10 +134,13 @@ def sector_count(state, sector):
 
 def regime_is_bullish(cfg, cache):
     df = cache.get(cfg["regime_ticker"])
-    if df is None:
+    if df is None or df.empty:
         return True
-    ema200 = df["Close"].ewm(span=cfg["ema_trend"], adjust=False).mean()
-    return bool(df["Close"].iloc[-1] > ema200.iloc[-1])
+    close = df["Close"].dropna()
+    if close.empty:
+        return True
+    ema200 = close.ewm(span=cfg["ema_trend"], adjust=False).mean()
+    return bool(close.iloc[-1] > ema200.iloc[-1])
 
 
 def bars_held(entry_date_str, today_str):
@@ -145,7 +162,7 @@ def desired_risk_fraction(score, cfg):
 
 
 # =============================================================================
-# CUENTA (apertura con trailing, sin TP fijo)
+# CUENTA
 # =============================================================================
 
 def open_position(state, ticker, sig, atr_val, cfg, today):
@@ -155,16 +172,14 @@ def open_position(state, ticker, sig, atr_val, cfg, today):
     risk_frac = min(wanted, headroom)
     if risk_frac < cfg["min_position_risk"]:
         return None
-
     entry = sig["entry"]
     trail_dist = cfg["trail_mult"] * atr_val
     init_stop = entry - trail_dist
     per_share_risk = entry - init_stop
-    if per_share_risk <= 0:
+    if per_share_risk <= 0 or not np.isfinite(entry):
         return None
     risk_amount = equity * risk_frac
     shares = risk_amount / per_share_risk
-
     state["open_positions"][ticker] = {
         "entry": entry, "init_stop": round(init_stop, 2),
         "trail_dist": round(trail_dist, 4), "highest": entry,
@@ -183,14 +198,10 @@ def close_position(state, ticker, exit_price, outcome, cfg, today):
     pnl = pos["shares"] * (eff_exit - eff_entry)
     risk = pos["entry"] - pos["init_stop"]
     r_mult = (exit_price - pos["entry"]) / risk if risk > 0 else 0
-
     state["equity"] += pnl
     state["peak_equity"] = max(state["peak_equity"], state["equity"])
-
-    # Enfriamiento SOLO si la salida fue perdedora
     if pnl < 0:
         state.setdefault("cooldowns", {})[ticker] = today
-
     trade = {
         "ticker": ticker, "entry_date": pos["entry_date"], "exit_date": today,
         "entry": round(pos["entry"], 2), "exit": round(exit_price, 2),
@@ -206,11 +217,14 @@ def close_position(state, ticker, exit_price, outcome, cfg, today):
 
 
 def mark_to_market(state, cache):
+    """Valor a mercado usando el ultimo precio VALIDO de cada posicion.
+    Si una posicion no tiene precio valido, se cuenta a su precio de entrada
+    (PnL 0) en vez de contaminar todo con nan."""
     mtm = state["equity"]
     for t, p in state["open_positions"].items():
-        df = cache.get(t)
-        if df is not None and not df.empty:
-            mtm += p["shares"] * (float(df["Close"].iloc[-1]) - p["entry"])
+        px = last_valid_close(cache.get(t))
+        if px is not None:
+            mtm += p["shares"] * (px - p["entry"])
     return round(mtm, 2)
 
 
@@ -240,35 +254,30 @@ def run(cfg=PT_CONFIG):
     cache = download_all(cfg)
     bullish = regime_is_bullish(cfg, cache)
 
-    # --- 1. SALIDAS (trailing + red de seguridad temporal) ------------------
+    # --- 1. SALIDAS ---------------------------------------------------------
     for ticker in list(state["open_positions"].keys()):
-        df = cache.get(ticker)
-        if df is None:
-            events.append(f"[!] {ticker}: sin datos hoy, sigue abierta")
+        row = last_valid_row(cache.get(ticker))
+        if row is None:
+            events.append(f"[!] {ticker}: sin datos validos hoy, sigue abierta")
             continue
-        last = df.iloc[-1]
         pos = state["open_positions"][ticker]
-
-        # Trailing stop vigente HOY = maximo hasta AYER menos la distancia
         trailing = pos["highest"] - pos["trail_dist"]
         cur_stop = max(pos["init_stop"], trailing)
         expired = bars_held(pos["entry_date"], today) >= cfg["time_stop_bars"]
 
-        if last["Low"] <= cur_stop:
+        if float(row["Low"]) <= cur_stop:
             t = close_position(state, ticker, cur_stop, "TRAIL", cfg, today)
             tag = " (enfriamiento)" if t["pnl"] < 0 else ""
             events.append(f"CIERRE {ticker}: TRAILING @ {round(cur_stop,2)}, "
                           f"PnL ${t['pnl']} ({t['R']}R){tag}")
         elif expired:
-            t = close_position(state, ticker, float(last["Close"]), "TIEMPO", cfg, today)
+            t = close_position(state, ticker, float(row["Close"]), "TIEMPO", cfg, today)
             events.append(f"CIERRE {ticker}: STOP TEMPORAL ({cfg['time_stop_bars']}d), "
                           f"PnL ${t['pnl']} ({t['R']}R)")
         else:
-            # No salio: actualizar el maximo con el alto de HOY (para mañana)
-            new_high = max(pos["highest"], float(last["High"]))
-            pos["highest"] = round(new_high, 2)
+            pos["highest"] = round(max(pos["highest"], float(row["High"])), 2)
 
-    # --- 2. ENTRADAS (solo regimen alcista) ---------------------------------
+    # --- 2. ENTRADAS --------------------------------------------------------
     if not bullish:
         events.append("REGIMEN BAJISTA (S&P bajo EMA200): no se abren posiciones.")
     else:
@@ -284,12 +293,15 @@ def run(cfg=PT_CONFIG):
             if sector_count(state, sector) >= cfg["max_per_sector"]:
                 continue
             df = cache.get(ticker)
-            if df is None:
+            if df is None or df.empty:
                 continue
             df = enrich(df, cfg)
             res = evaluate(df, cfg)
             if res and res["is_signal"]:
-                atr_val = float(df.iloc[-1]["atr"])
+                atr_series = df["atr"].dropna()
+                if atr_series.empty:
+                    continue
+                atr_val = float(atr_series.iloc[-1])
                 pos = open_position(state, ticker, res, atr_val, cfg, today)
                 if pos:
                     events.append(
@@ -337,18 +349,17 @@ def build_summary(state, events, today, mtm, bullish, cfg, cache):
         lines.append("--- Abiertas (precio | PnL | R | stop movil) ---")
         for t, p in state["open_positions"].items():
             held = bars_held(p["entry_date"], today)
-            df = cache.get(t)
-            if df is not None and not df.empty:
-                px = float(df["Close"].iloc[-1])
+            px = last_valid_close(cache.get(t))
+            cur_stop = max(p["init_stop"], p["highest"] - p["trail_dist"])
+            if px is not None:
                 risk = p["entry"] - p["init_stop"]
                 pnl = p["shares"] * (px - p["entry"])
                 r_mult = (px - p["entry"]) / risk if risk > 0 else 0
-                cur_stop = max(p["init_stop"], p["highest"] - p["trail_dist"])
                 sign = "+" if pnl >= 0 else ""
                 lines.append(f"  {t}: {px:.2f} | {sign}${round(pnl,2)} "
                              f"({sign}{round(r_mult,2)}R) | stop {round(cur_stop,2)} | {held}d")
             else:
-                lines.append(f"  {t}: sin precio hoy | {held}d")
+                lines.append(f"  {t}: sin precio hoy | stop {round(cur_stop,2)} | {held}d")
     return "\n".join(lines)
 
 
