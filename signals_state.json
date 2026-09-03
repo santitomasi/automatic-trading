@@ -1,20 +1,16 @@
 {
-  "last_run": "2026-09-02",
+  "last_run": "2026-09-03",
   "active_signals": {
-    "AAPL": 3,
-    "MSFT": 4,
-    "NVDA": 3,
-    "AMZN": 3,
-    "JPM": 3,
-    "BAC": 4,
-    "V": 4,
-    "JNJ": 4,
-    "UNH": 3,
-    "PFE": 4,
-    "XOM": 4,
-    "CVX": 3,
-    "KO": 4,
+    "MSFT": 3,
+    "BAC": 3,
+    "V": 3,
+    "JNJ": 3,
+    "PFE": 3,
+    "XOM": 3,
+    "KO": 3,
     "^GSPC": 3,
-    "^NDX": 3
+    "^NDX": 3,
+    "^DJI": 3,
+    "^RUT": 3
   }
 }
