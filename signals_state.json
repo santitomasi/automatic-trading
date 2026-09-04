@@ -1,16 +1,15 @@
 {
-  "last_run": "2026-09-03",
+  "last_run": "2026-09-04",
   "active_signals": {
     "MSFT": 3,
     "BAC": 3,
     "V": 3,
     "JNJ": 3,
-    "PFE": 3,
     "XOM": 3,
     "KO": 3,
     "^GSPC": 3,
     "^NDX": 3,
     "^DJI": 3,
-    "^RUT": 3
+    "^RUT": 4
   }
 }
