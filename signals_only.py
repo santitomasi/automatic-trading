@@ -2,24 +2,32 @@
 =============================================================================
  SIGNALS ONLY - Feed de señales publico (corre EN PARALELO al paper trader)
 =============================================================================
- NO simula cuenta, NO abre posiciones. Escanea los tickers con la MISMA
- regla del screener y publica un mensaje visual, en ingles, pensado para
- un canal publico.
+ Escanea los tickers con la MISMA regla del screener y publica un mensaje
+ visual en ingles. Tiene DOS modos:
 
- FORMATO: muestra solo las señales NUEVAS del dia como "setups
- de hoy" (no re-lista las que ya venian de dias previos), para evitar que
- el publico se confunda con valores recalculados de operaciones ya abiertas.
- Internamente sigue recordando todas las vigentes para detectar cuales son
- nuevas mañana.
+   - "scheduled" (automatico, al cierre): muestra solo las señales NUEVAS
+     del dia (Opcion A), actualiza el estado, y va al CANAL. Es el registro
+     oficial. Valores definitivos.
 
- DESTINATARIOS: usa TELEGRAM_CHAT_ID_SIGNALS si existe (el CANAL); si no,
- cae a TELEGRAM_CHAT_ID. Varios IDs por coma. El bot debe ser admin del canal.
+   - "manual" (lo disparas vos desde Actions cuando quieras): muestra TODAS
+     las señales vigentes con precios frescos, NO actualiza el estado, y va
+     a TU CHAT PRIVADO. Es un "vistazo en vivo". Podes correrlo las veces
+     que quieras sin ensuciar la deteccion de novedades del cierre.
+
+ El modo lo define la variable de entorno RUN_MODE (la setea el workflow
+ segun si la corrida fue por schedule o manual). Cada mensaje aclara si el
+ mercado de EEUU esta ABIERTO (valores provisorios) o CERRADO (definitivos).
+
+ DESTINATARIOS:
+   scheduled -> TELEGRAM_CHAT_ID_SIGNALS (canal) si existe, si no el privado.
+   manual    -> TELEGRAM_CHAT_ID (tu chat privado) siempre.
 =============================================================================
 """
 
 import os
 import json
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import yfinance as yf
 from screener import enrich, evaluate, CONFIG
@@ -60,7 +68,22 @@ def save_state(state):
 
 
 # =============================================================================
-# ANÁLISIS S&P 500
+# ESTADO DEL MERCADO (EEUU, con horario de Nueva York)
+# =============================================================================
+
+def market_status():
+    """¿Esta abierto el mercado de EEUU ahora? (9:30-16:00 ET, dias habiles).
+    No contempla feriados; es una guia, no un calendario oficial."""
+    now_et = datetime.now(ZoneInfo("America/New_York"))
+    is_weekday = now_et.weekday() < 5
+    open_t = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+    close_t = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
+    return {"is_open": is_weekday and open_t <= now_et < close_t,
+            "et": now_et.strftime("%H:%M ET")}
+
+
+# =============================================================================
+# ANÁLISIS S&P 500 / ESCANEO
 # =============================================================================
 
 def analyze_sp500(cfg, df):
@@ -69,16 +92,10 @@ def analyze_sp500(cfg, df):
     d = enrich(df.copy(), cfg)
     last = d.iloc[-1]
     ema200 = float(last["ema_trend"]); price = float(last["Close"])
-    return {
-        "price": round(price, 2),
-        "dist_pct": round((price - ema200) / ema200 * 100, 1),
-        "bullish": price > ema200,
-    }
+    return {"price": round(price, 2),
+            "dist_pct": round((price - ema200) / ema200 * 100, 1),
+            "bullish": price > ema200}
 
-
-# =============================================================================
-# ESCANEO
-# =============================================================================
 
 def scan(cfg, cache):
     signals = {}
@@ -110,36 +127,49 @@ def download_all(cfg):
 # =============================================================================
 
 def run(cfg=SIG_CONFIG):
+    mode = os.environ.get("RUN_MODE", "scheduled").strip().lower()
+    if mode not in ("scheduled", "manual"):
+        mode = "scheduled"
+
     state = load_state()
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    if state.get("last_run") == today:
-        print(f"Ya se corrio hoy ({today}). Saltando.")
+
+    # La proteccion "ya se corrio hoy" solo aplica al automatico, para no
+    # duplicar el registro. El manual puede correrse cuantas veces quieras.
+    if mode == "scheduled" and state.get("last_run") == today:
+        print(f"Ya se corrio hoy ({today}). Saltando (modo automatico).")
         return state
 
     cache = download_all(cfg)
     sp = analyze_sp500(cfg, cache.get(cfg["regime_ticker"]))
     current = scan(cfg, cache)
-    previous = state.get("active_signals", {})
+    mkt = market_status()
 
-    # Opcion A: solo lo NUEVO (no estaba ayer) o que SUBIO a 4/4
-    fresh = {}
-    for t, v in current.items():
-        was = previous.get(t)
-        if was is None or v["score"] > was:
-            fresh[t] = v
+    if mode == "scheduled":
+        # Opcion A: solo lo NUEVO o lo que subio a 4/4
+        previous = state.get("active_signals", {})
+        shown = {t: v for t, v in current.items()
+                 if previous.get(t) is None or v["score"] > previous.get(t)}
+        raw_ids = os.environ.get("TELEGRAM_CHAT_ID_SIGNALS") or os.environ.get("TELEGRAM_CHAT_ID")
+    else:
+        # Manual: TODAS las vigentes, sin tocar el estado, al chat privado
+        shown = current
+        raw_ids = os.environ.get("TELEGRAM_CHAT_ID")
 
-    summary = build_public_message(today, sp, fresh)
+    summary = build_public_message(today, sp, shown, mkt, mode)
     print(summary)
-    send_telegram(summary)
+    send_telegram(summary, raw_ids)
 
-    state["active_signals"] = {t: v["score"] for t, v in current.items()}
-    state["last_run"] = today
-    save_state(state)
+    # Solo el automatico persiste el estado (el manual es un vistazo)
+    if mode == "scheduled":
+        state["active_signals"] = {t: v["score"] for t, v in current.items()}
+        state["last_run"] = today
+        save_state(state)
     return state
 
 
 # =============================================================================
-# MENSAJE PÚBLICO (ingles, visual, opcion A)
+# MENSAJE PÚBLICO
 # =============================================================================
 
 def fmt_date(today_str):
@@ -154,10 +184,20 @@ def fmt_setup(ticker, v):
             f"     🎯 Take Profit: ${v['tp']:,.2f}")
 
 
-def build_public_message(today, sp, fresh):
-    lines = ["📊 TRADING SIGNALS", f"📅 {fmt_date(today)}", ""]
+def build_public_message(today, sp, shown, mkt, mode):
+    if mode == "manual":
+        lines = ["📊 TRADING SIGNALS — LIVE SNAPSHOT", f"📅 {fmt_date(today)} · {mkt['et']}"]
+    else:
+        lines = ["📊 TRADING SIGNALS", f"📅 {fmt_date(today)}"]
 
     # Estado del mercado
+    if mkt["is_open"]:
+        lines.append("🔵 US market OPEN — values are provisional (still moving)")
+    else:
+        lines.append("⚪ US market CLOSED — values are settled")
+    lines.append("")
+
+    # Mercado (S&P 500)
     if sp:
         if sp["bullish"]:
             lines.append("🌎 Market (S&P 500): 🟢 Bullish")
@@ -171,24 +211,29 @@ def build_public_message(today, sp, fresh):
 
     lines.append(DIV)
 
-    strong = {t: v for t, v in fresh.items() if v["score"] == 4}
-    moderate = {t: v for t, v in fresh.items() if v["score"] == 3}
+    strong = {t: v for t, v in shown.items() if v["score"] == 4}
+    moderate = {t: v for t, v in shown.items() if v["score"] == 3}
 
-    if not fresh:
+    header_new = "" if mode == "manual" else " (new today)"
+    if not shown:
         lines.append("")
-        lines.append("No new setups today.")
+        lines.append("No new setups today." if mode == "scheduled" else "No active setups right now.")
         lines.append("")
     else:
         if strong:
-            lines.append("🟢 STRONG SETUPS (4/4)")
+            lines.append(f"🟢 STRONG SETUPS (4/4){header_new}")
             lines.append("")
             for t, v in sorted(strong.items()):
                 lines.append(fmt_setup(t, v)); lines.append("")
         if moderate:
-            lines.append("🟡 MODERATE SETUPS (3/4)")
+            lines.append(f"🟡 MODERATE SETUPS (3/4){header_new}")
             lines.append("")
             for t, v in sorted(moderate.items()):
                 lines.append(fmt_setup(t, v)); lines.append("")
+
+    if mode == "manual" and mkt["is_open"]:
+        lines.append("⏳ Intraday snapshot — final signals are confirmed at market close.")
+        lines.append("")
 
     lines.append(DIV)
     lines.append("")
@@ -197,7 +242,7 @@ def build_public_message(today, sp, fresh):
 
 
 # =============================================================================
-# TELEGRAM (canal para señales, fallback al chat privado)
+# TELEGRAM
 # =============================================================================
 
 def parse_recipients(raw):
@@ -206,10 +251,9 @@ def parse_recipients(raw):
     return [r.strip() for r in raw.split(",") if r.strip()]
 
 
-def send_telegram(text):
+def send_telegram(text, raw_ids):
     token = os.environ.get("TELEGRAM_TOKEN")
-    raw = os.environ.get("TELEGRAM_CHAT_ID_SIGNALS") or os.environ.get("TELEGRAM_CHAT_ID")
-    recipients = parse_recipients(raw)
+    recipients = parse_recipients(raw_ids)
     if not token or not recipients:
         print("(Telegram no configurado; omitiendo alerta)")
         return
