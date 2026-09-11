@@ -1,11 +1,9 @@
 name: Señales Diarias (paralelo)
 
-# Corre 15 min DESPUES del paper trader (22:15 UTC) para no chocar con su
-# commit al repositorio. Mismos dias habiles.
 on:
   schedule:
-    - cron: '15 22 * * 1-5'
-  workflow_dispatch:
+    - cron: '15 22 * * 1-5'   # automatico: al cierre de EEUU (dias habiles)
+  workflow_dispatch:           # manual: dispáralo cuando quieras desde Actions
 
 permissions:
   contents: write
@@ -23,13 +21,15 @@ jobs:
           python-version: '3.11'
 
       - name: Instalar dependencias
-        run: pip install yfinance pandas numpy
+        run: pip install yfinance pandas numpy tzdata
 
       - name: Correr el feed de señales
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_CHAT_ID_SIGNALS: ${{ secrets.TELEGRAM_CHAT_ID_SIGNALS }}
+          # scheduled si lo dispara el cron; manual si lo disparas vos a mano
+          RUN_MODE: ${{ github.event_name == 'schedule' && 'scheduled' || 'manual' }}
         run: python signals_only.py
 
       - name: Guardar el estado de señales
