@@ -3,20 +3,20 @@
  SIGNALS ONLY - Feed de señales publico (corre EN PARALELO al paper trader)
 =============================================================================
  Escanea los tickers con la MISMA regla del screener y publica un mensaje
- visual en ingles. Tiene DOS modos:
+ visual en ingles. Dos modos:
 
-   - "scheduled" (automatico, al cierre): muestra solo las señales NUEVAS
-     del dia (Opcion A), actualiza el estado, y va al CANAL. Es el registro
-     oficial. Valores definitivos.
+   - "scheduled" (automatico, al cierre): solo señales NUEVAS (Opcion A),
+     actualiza estado, va al CANAL. Valores definitivos.
+   - "manual" (lo disparas vos): TODAS las vigentes con precios frescos, NO
+     actualiza estado, va a TU CHAT PRIVADO. Vistazo en vivo.
 
-   - "manual" (lo disparas vos desde Actions cuando quieras): muestra TODAS
-     las señales vigentes con precios frescos, NO actualiza el estado, y va
-     a TU CHAT PRIVADO. Es un "vistazo en vivo". Podes correrlo las veces
-     que quieras sin ensuciar la deteccion de novedades del cierre.
+ El modo lo define RUN_MODE (lo setea el workflow). Cada mensaje aclara si
+ el mercado de EEUU esta ABIERTO (provisorio) o CERRADO (definitivo).
 
- El modo lo define la variable de entorno RUN_MODE (la setea el workflow
- segun si la corrida fue por schedule o manual). Cada mensaje aclara si el
- mercado de EEUU esta ABIERTO (valores provisorios) o CERRADO (definitivos).
+ FIX (v2): blindaje contra "nan". Si un ticker devuelve datos con la ultima
+ vela incompleta, sus entry/sl/tp salen nan. Ahora scan() DESCARTA cualquier
+ señal cuyos valores no sean finitos, en vez de mostrarla rota. Un ticker
+ con datos malos simplemente no aparece ese dia.
 
  DESTINATARIOS:
    scheduled -> TELEGRAM_CHAT_ID_SIGNALS (canal) si existe, si no el privado.
@@ -26,6 +26,7 @@
 
 import os
 import json
+import math
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
@@ -52,6 +53,14 @@ DIV = "━━━━━━━━━━━━━━━━━━"
 
 
 # =============================================================================
+# HELPERS
+# =============================================================================
+
+def is_finite_num(x):
+    return isinstance(x, (int, float)) and math.isfinite(x)
+
+
+# =============================================================================
 # ESTADO
 # =============================================================================
 
@@ -68,12 +77,10 @@ def save_state(state):
 
 
 # =============================================================================
-# ESTADO DEL MERCADO (EEUU, con horario de Nueva York)
+# ESTADO DEL MERCADO (EEUU, horario de Nueva York)
 # =============================================================================
 
 def market_status():
-    """¿Esta abierto el mercado de EEUU ahora? (9:30-16:00 ET, dias habiles).
-    No contempla feriados; es una guia, no un calendario oficial."""
     now_et = datetime.now(ZoneInfo("America/New_York"))
     is_weekday = now_et.weekday() < 5
     open_t = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
@@ -83,15 +90,20 @@ def market_status():
 
 
 # =============================================================================
-# ANÁLISIS S&P 500 / ESCANEO
+# ANÁLISIS S&P 500 / ESCANEO  (blindados contra nan)
 # =============================================================================
 
 def analyze_sp500(cfg, df):
     if df is None or df.empty:
         return None
     d = enrich(df.copy(), cfg)
-    last = d.iloc[-1]
-    ema200 = float(last["ema_trend"]); price = float(last["Close"])
+    close = d["Close"].dropna()
+    ema = d["ema_trend"].dropna()
+    if close.empty or ema.empty:
+        return None
+    price = float(close.iloc[-1]); ema200 = float(ema.iloc[-1])
+    if not (is_finite_num(price) and is_finite_num(ema200)) or ema200 == 0:
+        return None
     return {"price": round(price, 2),
             "dist_pct": round((price - ema200) / ema200 * 100, 1),
             "bullish": price > ema200}
@@ -101,13 +113,18 @@ def scan(cfg, cache):
     signals = {}
     for t in cfg["tickers"]:
         df = cache.get(t)
-        if df is None:
+        if df is None or df.empty:
             continue
         d = enrich(df.copy(), cfg)
         res = evaluate(d, cfg)
-        if res and res["is_signal"]:
-            signals[t] = {"score": res["score"], "entry": res["entry"],
-                          "sl": res["sl"], "tp": res["tp"]}
+        if not (res and res["is_signal"]):
+            continue
+        # BLINDAJE: descartar señales con entry/sl/tp no finitos (datos rotos)
+        if not all(is_finite_num(res.get(k)) for k in ("entry", "sl", "tp")):
+            print(f"  [!] {t}: señal descartada por valores invalidos (datos incompletos)")
+            continue
+        signals[t] = {"score": res["score"], "entry": res["entry"],
+                      "sl": res["sl"], "tp": res["tp"]}
     return signals
 
 
@@ -134,8 +151,6 @@ def run(cfg=SIG_CONFIG):
     state = load_state()
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    # La proteccion "ya se corrio hoy" solo aplica al automatico, para no
-    # duplicar el registro. El manual puede correrse cuantas veces quieras.
     if mode == "scheduled" and state.get("last_run") == today:
         print(f"Ya se corrio hoy ({today}). Saltando (modo automatico).")
         return state
@@ -146,13 +161,11 @@ def run(cfg=SIG_CONFIG):
     mkt = market_status()
 
     if mode == "scheduled":
-        # Opcion A: solo lo NUEVO o lo que subio a 4/4
         previous = state.get("active_signals", {})
         shown = {t: v for t, v in current.items()
                  if previous.get(t) is None or v["score"] > previous.get(t)}
         raw_ids = os.environ.get("TELEGRAM_CHAT_ID_SIGNALS") or os.environ.get("TELEGRAM_CHAT_ID")
     else:
-        # Manual: TODAS las vigentes, sin tocar el estado, al chat privado
         shown = current
         raw_ids = os.environ.get("TELEGRAM_CHAT_ID")
 
@@ -160,7 +173,6 @@ def run(cfg=SIG_CONFIG):
     print(summary)
     send_telegram(summary, raw_ids)
 
-    # Solo el automatico persiste el estado (el manual es un vistazo)
     if mode == "scheduled":
         state["active_signals"] = {t: v["score"] for t, v in current.items()}
         state["last_run"] = today
@@ -190,14 +202,12 @@ def build_public_message(today, sp, shown, mkt, mode):
     else:
         lines = ["📊 TRADING SIGNALS", f"📅 {fmt_date(today)}"]
 
-    # Estado del mercado
     if mkt["is_open"]:
         lines.append("🔵 US market OPEN — values are provisional (still moving)")
     else:
         lines.append("⚪ US market CLOSED — values are settled")
     lines.append("")
 
-    # Mercado (S&P 500)
     if sp:
         if sp["bullish"]:
             lines.append("🌎 Market (S&P 500): 🟢 Bullish")
@@ -213,21 +223,19 @@ def build_public_message(today, sp, shown, mkt, mode):
 
     strong = {t: v for t, v in shown.items() if v["score"] == 4}
     moderate = {t: v for t, v in shown.items() if v["score"] == 3}
-
     header_new = "" if mode == "manual" else " (new today)"
+
     if not shown:
         lines.append("")
         lines.append("No new setups today." if mode == "scheduled" else "No active setups right now.")
         lines.append("")
     else:
         if strong:
-            lines.append(f"🟢 STRONG SETUPS (4/4){header_new}")
-            lines.append("")
+            lines.append(f"🟢 STRONG SETUPS (4/4){header_new}"); lines.append("")
             for t, v in sorted(strong.items()):
                 lines.append(fmt_setup(t, v)); lines.append("")
         if moderate:
-            lines.append(f"🟡 MODERATE SETUPS (3/4){header_new}")
-            lines.append("")
+            lines.append(f"🟡 MODERATE SETUPS (3/4){header_new}"); lines.append("")
             for t, v in sorted(moderate.items()):
                 lines.append(fmt_setup(t, v)); lines.append("")
 
@@ -235,9 +243,7 @@ def build_public_message(today, sp, shown, mkt, mode):
         lines.append("⏳ Intraday snapshot — final signals are confirmed at market close.")
         lines.append("")
 
-    lines.append(DIV)
-    lines.append("")
-    lines.append(DISCLAIMER)
+    lines.append(DIV); lines.append(""); lines.append(DISCLAIMER)
     return "\n".join(lines)
 
 
