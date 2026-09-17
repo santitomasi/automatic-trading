@@ -2,25 +2,14 @@
 =============================================================================
  SIGNALS ONLY - Feed de señales publico (corre EN PARALELO al paper trader)
 =============================================================================
- Escanea los tickers con la MISMA regla del screener y publica un mensaje
- visual en ingles. Dos modos:
+ Dos modos: "scheduled" (automatico al cierre, solo señales NUEVAS, al CANAL)
+ y "manual" (vistazo en vivo con todas las vigentes, a tu chat privado).
 
-   - "scheduled" (automatico, al cierre): solo señales NUEVAS (Opcion A),
-     actualiza estado, va al CANAL. Valores definitivos.
-   - "manual" (lo disparas vos): TODAS las vigentes con precios frescos, NO
-     actualiza estado, va a TU CHAT PRIVADO. Vistazo en vivo.
-
- El modo lo define RUN_MODE (lo setea el workflow). Cada mensaje aclara si
- el mercado de EEUU esta ABIERTO (provisorio) o CERRADO (definitivo).
-
- FIX (v2): blindaje contra "nan". Si un ticker devuelve datos con la ultima
- vela incompleta, sus entry/sl/tp salen nan. Ahora scan() DESCARTA cualquier
- señal cuyos valores no sean finitos, en vez de mostrarla rota. Un ticker
- con datos malos simplemente no aparece ese dia.
-
- DESTINATARIOS:
-   scheduled -> TELEGRAM_CHAT_ID_SIGNALS (canal) si existe, si no el privado.
-   manual    -> TELEGRAM_CHAT_ID (tu chat privado) siempre.
+ FIX DE RAIZ (v3): clean_ohlc() elimina las filas con precios vacios (la
+ fila "placeholder" que yfinance devuelve a veces) APENAS se descargan,
+ antes de calcular ningun indicador. Asi todo se evalua sobre el ultimo
+ dia real y completo: una señal 4/4 se ve como 4/4 con precios reales,
+ en vez de deformarse en "3/4 con NaN" y perderse.
 =============================================================================
 """
 
@@ -34,34 +23,35 @@ import yfinance as yf
 from screener import enrich, evaluate, CONFIG
 
 
-SIG_CONFIG = {
-    **CONFIG,
-    "regime_ticker": "^GSPC",
-    "lookback": "1y",
-}
-
+SIG_CONFIG = {**CONFIG, "regime_ticker": "^GSPC", "lookback": "1y"}
 STATE_FILE = "signals_state.json"
-
 MONTHS = ["January", "February", "March", "April", "May", "June", "July",
           "August", "September", "October", "November", "December"]
-
 DISCLAIMER = ("⚠️ This is NOT financial advice. Educational information only. "
               "Trading involves risk of loss. You are responsible for your "
               "own decisions.")
-
 DIV = "━━━━━━━━━━━━━━━━━━"
 
 
 # =============================================================================
-# HELPERS
+# LIMPIEZA DE DATOS (el arreglo de raiz)
 # =============================================================================
+
+def clean_ohlc(df):
+    """Elimina filas con High/Low/Close vacios. Se aplica al descargar,
+    ANTES de cualquier indicador. Devuelve None si no queda nada util."""
+    if df is None or df.empty:
+        return None
+    d = df.dropna(subset=["High", "Low", "Close"])
+    return d if not d.empty else None
+
 
 def is_finite_num(x):
     return isinstance(x, (int, float)) and math.isfinite(x)
 
 
 # =============================================================================
-# ESTADO
+# ESTADO / MERCADO
 # =============================================================================
 
 def load_state():
@@ -76,10 +66,6 @@ def save_state(state):
         json.dump(state, f, indent=2, default=str)
 
 
-# =============================================================================
-# ESTADO DEL MERCADO (EEUU, horario de Nueva York)
-# =============================================================================
-
 def market_status():
     now_et = datetime.now(ZoneInfo("America/New_York"))
     is_weekday = now_et.weekday() < 5
@@ -90,18 +76,14 @@ def market_status():
 
 
 # =============================================================================
-# ANÁLISIS S&P 500 / ESCANEO  (blindados contra nan)
+# ANÁLISIS / ESCANEO
 # =============================================================================
 
 def analyze_sp500(cfg, df):
     if df is None or df.empty:
         return None
     d = enrich(df.copy(), cfg)
-    close = d["Close"].dropna()
-    ema = d["ema_trend"].dropna()
-    if close.empty or ema.empty:
-        return None
-    price = float(close.iloc[-1]); ema200 = float(ema.iloc[-1])
+    price = float(d["Close"].iloc[-1]); ema200 = float(d["ema_trend"].iloc[-1])
     if not (is_finite_num(price) and is_finite_num(ema200)) or ema200 == 0:
         return None
     return {"price": round(price, 2),
@@ -113,15 +95,14 @@ def scan(cfg, cache):
     signals = {}
     for t in cfg["tickers"]:
         df = cache.get(t)
-        if df is None or df.empty:
+        if df is None:
             continue
-        d = enrich(df.copy(), cfg)
-        res = evaluate(d, cfg)
+        res = evaluate(enrich(df.copy(), cfg), cfg)
         if not (res and res["is_signal"]):
             continue
-        # BLINDAJE: descartar señales con entry/sl/tp no finitos (datos rotos)
+        # Red de seguridad (con los datos limpios no deberia dispararse)
         if not all(is_finite_num(res.get(k)) for k in ("entry", "sl", "tp")):
-            print(f"  [!] {t}: señal descartada por valores invalidos (datos incompletos)")
+            print(f"  [!] {t}: señal descartada por valores invalidos")
             continue
         signals[t] = {"score": res["score"], "entry": res["entry"],
                       "sl": res["sl"], "tp": res["tp"]}
@@ -132,8 +113,8 @@ def download_all(cfg):
     cache = {}
     for t in list(dict.fromkeys(cfg["tickers"] + [cfg["regime_ticker"]])):
         try:
-            df = yf.Ticker(t).history(period=cfg["lookback"], interval=cfg["interval"])
-            cache[t] = df if not df.empty else None
+            raw = yf.Ticker(t).history(period=cfg["lookback"], interval=cfg["interval"])
+            cache[t] = clean_ohlc(raw)          # <- limpieza en la fuente
         except Exception:
             cache[t] = None
     return cache
@@ -147,10 +128,8 @@ def run(cfg=SIG_CONFIG):
     mode = os.environ.get("RUN_MODE", "scheduled").strip().lower()
     if mode not in ("scheduled", "manual"):
         mode = "scheduled"
-
     state = load_state()
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
     if mode == "scheduled" and state.get("last_run") == today:
         print(f"Ya se corrio hoy ({today}). Saltando (modo automatico).")
         return state
@@ -169,6 +148,8 @@ def run(cfg=SIG_CONFIG):
         shown = current
         raw_ids = os.environ.get("TELEGRAM_CHAT_ID")
 
+    print(f"Señales vigentes: {len(current)} | nuevas hoy: {len(shown)} | tickers con datos: "
+          f"{sum(1 for t in cfg['tickers'] if cache.get(t) is not None)}/{len(cfg['tickers'])}")
     summary = build_public_message(today, sp, shown, mkt, mode)
     print(summary)
     send_telegram(summary, raw_ids)
@@ -184,16 +165,14 @@ def run(cfg=SIG_CONFIG):
 # MENSAJE PÚBLICO
 # =============================================================================
 
-def fmt_date(today_str):
-    y, m, d = today_str.split("-")
+def fmt_date(s):
+    y, m, d = s.split("-")
     return f"{MONTHS[int(m)-1]} {int(d)}, {y}"
 
 
-def fmt_setup(ticker, v):
-    return (f"  {ticker}\n"
-            f"     Entry: ${v['entry']:,.2f}\n"
-            f"     🛑 Stop Loss: ${v['sl']:,.2f}\n"
-            f"     🎯 Take Profit: ${v['tp']:,.2f}")
+def fmt_setup(t, v):
+    return (f"  {t}\n     Entry: ${v['entry']:,.2f}\n"
+            f"     🛑 Stop Loss: ${v['sl']:,.2f}\n     🎯 Take Profit: ${v['tp']:,.2f}")
 
 
 def build_public_message(today, sp, shown, mkt, mode):
@@ -201,49 +180,36 @@ def build_public_message(today, sp, shown, mkt, mode):
         lines = ["📊 TRADING SIGNALS — LIVE SNAPSHOT", f"📅 {fmt_date(today)} · {mkt['et']}"]
     else:
         lines = ["📊 TRADING SIGNALS", f"📅 {fmt_date(today)}"]
-
-    if mkt["is_open"]:
-        lines.append("🔵 US market OPEN — values are provisional (still moving)")
-    else:
-        lines.append("⚪ US market CLOSED — values are settled")
+    lines.append("🔵 US market OPEN — values are provisional (still moving)" if mkt["is_open"]
+                 else "⚪ US market CLOSED — values are settled")
     lines.append("")
-
     if sp:
         if sp["bullish"]:
-            lines.append("🌎 Market (S&P 500): 🟢 Bullish")
-            lines.append(f"   +{sp['dist_pct']}% above yearly average")
+            lines += ["🌎 Market (S&P 500): 🟢 Bullish", f"   +{sp['dist_pct']}% above yearly average"]
         else:
-            lines.append("🌎 Market (S&P 500): 🔴 Bearish")
-            lines.append(f"   {sp['dist_pct']}% below yearly average")
-            lines.append("   ⚠️ Caution: broad trend is down")
+            lines += ["🌎 Market (S&P 500): 🔴 Bearish", f"   {sp['dist_pct']}% below yearly average",
+                      "   ⚠️ Caution: broad trend is down"]
     else:
         lines.append("🌎 Market (S&P 500): data unavailable")
-
     lines.append(DIV)
 
     strong = {t: v for t, v in shown.items() if v["score"] == 4}
     moderate = {t: v for t, v in shown.items() if v["score"] == 3}
-    header_new = "" if mode == "manual" else " (new today)"
-
+    tag = "" if mode == "manual" else " (new today)"
     if not shown:
-        lines.append("")
-        lines.append("No new setups today." if mode == "scheduled" else "No active setups right now.")
-        lines.append("")
+        lines += ["", "No new setups today." if mode == "scheduled" else "No active setups right now.", ""]
     else:
         if strong:
-            lines.append(f"🟢 STRONG SETUPS (4/4){header_new}"); lines.append("")
+            lines += [f"🟢 STRONG SETUPS (4/4){tag}", ""]
             for t, v in sorted(strong.items()):
-                lines.append(fmt_setup(t, v)); lines.append("")
+                lines += [fmt_setup(t, v), ""]
         if moderate:
-            lines.append(f"🟡 MODERATE SETUPS (3/4){header_new}"); lines.append("")
+            lines += [f"🟡 MODERATE SETUPS (3/4){tag}", ""]
             for t, v in sorted(moderate.items()):
-                lines.append(fmt_setup(t, v)); lines.append("")
-
+                lines += [fmt_setup(t, v), ""]
     if mode == "manual" and mkt["is_open"]:
-        lines.append("⏳ Intraday snapshot — final signals are confirmed at market close.")
-        lines.append("")
-
-    lines.append(DIV); lines.append(""); lines.append(DISCLAIMER)
+        lines += ["⏳ Intraday snapshot — final signals are confirmed at market close.", ""]
+    lines += [DIV, "", DISCLAIMER]
     return "\n".join(lines)
 
 
@@ -252,28 +218,24 @@ def build_public_message(today, sp, shown, mkt, mode):
 # =============================================================================
 
 def parse_recipients(raw):
-    if not raw:
-        return []
-    return [r.strip() for r in raw.split(",") if r.strip()]
+    return [r.strip() for r in raw.split(",") if r.strip()] if raw else []
 
 
 def send_telegram(text, raw_ids):
     token = os.environ.get("TELEGRAM_TOKEN")
     recipients = parse_recipients(raw_ids)
     if not token or not recipients:
-        print("(Telegram no configurado; omitiendo alerta)")
-        return
+        print("(Telegram no configurado; omitiendo alerta)"); return
     import urllib.request, urllib.parse
     url = f"https://api.telegram.org/bot{token}/sendMessage"
-    ok, fail = 0, 0
+    ok = fail = 0
     for chat_id in recipients:
         try:
             data = urllib.parse.urlencode({"chat_id": chat_id, "text": text}).encode()
             urllib.request.urlopen(urllib.request.Request(url, data=data), timeout=15)
             ok += 1
         except Exception as e:
-            fail += 1
-            print(f"(Fallo al enviar a {chat_id}: {e})")
+            fail += 1; print(f"(Fallo al enviar a {chat_id}: {e})")
     print(f"(Enviado a {ok} destinatario(s); {fail} fallaron)")
 
 
