@@ -1,9 +1,9 @@
 {
-  "equity": 9961.261666088503,
+  "equity": 9857.679887522503,
   "start_equity": 10000.0,
   "peak_equity": 10076.752848062502,
   "created": "2026-07-06",
-  "last_run": "2026-09-17",
+  "last_run": "2026-09-18",
   "open_positions": {
     "AAPL": {
       "entry": 308.91,
@@ -41,15 +41,15 @@
       "score": 4,
       "entry_date": "2026-08-20"
     },
-    "JPM": {
-      "entry": 356.22,
-      "sl": 347.39,
-      "tp": 373.88,
-      "shares": 11.2812,
-      "risk_amount": 99.61,
+    "BAC": {
+      "entry": 57.73,
+      "sl": 55.79,
+      "tp": 61.61,
+      "shares": 50.8128,
+      "risk_amount": 98.58,
       "risk_pct": 1.0,
       "score": 3,
-      "entry_date": "2026-09-02"
+      "entry_date": "2026-09-18"
     }
   },
   "closed_trades": [
@@ -194,6 +194,19 @@
       "equity_after": 9961.26,
       "score": "",
       "risk_pct": ""
+    },
+    {
+      "ticker": "JPM",
+      "entry_date": "2026-09-02",
+      "exit_date": "2026-09-18",
+      "entry": 356.22,
+      "exit": 347.39,
+      "shares": 11.2812,
+      "outcome": "SL",
+      "pnl": -103.58,
+      "equity_after": 9857.68,
+      "score": 3,
+      "risk_pct": 1.0
     }
   ],
   "equity_history": [
@@ -401,11 +414,16 @@
       "date": "2026-09-17",
       "cash_equity": 9961.26,
       "mtm_equity": NaN
+    },
+    {
+      "date": "2026-09-18",
+      "cash_equity": 9857.68,
+      "mtm_equity": 10056.88
     }
   ],
   "cooldowns": {
     "BAC": "2026-08-20",
     "UNH": "2026-08-20",
-    "JPM": "2026-08-20"
+    "JPM": "2026-09-18"
   }
 }
