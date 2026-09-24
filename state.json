@@ -1,18 +1,10 @@
 {
-  "equity": 9857.679887522503,
+  "equity": 10051.257987250503,
   "start_equity": 10000.0,
   "peak_equity": 10076.752848062502,
   "created": "2026-07-06",
-  "last_run": "2026-09-22",
+  "last_run": "2026-09-24",
   "open_positions": {
-    "AAPL": {
-      "entry": 308.91,
-      "sl": 294.1,
-      "tp": 338.53,
-      "shares": 6.6076,
-      "risk_amount": 97.86,
-      "entry_date": "2026-07-31"
-    },
     "MSFT": {
       "entry": 487.46,
       "sl": 462.38,
@@ -50,6 +42,16 @@
       "risk_pct": 1.0,
       "score": 3,
       "entry_date": "2026-09-18"
+    },
+    "AAPL": {
+      "entry": 339.75,
+      "sl": 328.94,
+      "tp": 361.37,
+      "shares": 9.2981,
+      "risk_amount": 100.51,
+      "risk_pct": 1.0,
+      "score": 3,
+      "entry_date": "2026-09-24"
     }
   },
   "closed_trades": [
@@ -207,6 +209,19 @@
       "equity_after": 9857.68,
       "score": 3,
       "risk_pct": 1.0
+    },
+    {
+      "ticker": "AAPL",
+      "entry_date": "2026-07-31",
+      "exit_date": "2026-09-24",
+      "entry": 308.91,
+      "exit": 338.53,
+      "shares": 6.6076,
+      "outcome": "TP",
+      "pnl": 193.58,
+      "equity_after": 10051.26,
+      "score": "",
+      "risk_pct": ""
     }
   ],
   "equity_history": [
@@ -424,6 +439,11 @@
       "date": "2026-09-22",
       "cash_equity": 9857.68,
       "mtm_equity": 10056.88
+    },
+    {
+      "date": "2026-09-24",
+      "cash_equity": 10051.26,
+      "mtm_equity": 10042.34
     }
   ],
   "cooldowns": {
