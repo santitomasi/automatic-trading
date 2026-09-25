@@ -1,9 +1,9 @@
 {
-  "equity": 10051.257987250503,
+  "equity": 9949.797020722504,
   "start_equity": 10000.0,
   "peak_equity": 10076.752848062502,
   "created": "2026-07-06",
-  "last_run": "2026-09-24",
+  "last_run": "2026-09-25",
   "open_positions": {
     "MSFT": {
       "entry": 487.46,
@@ -33,16 +33,6 @@
       "score": 4,
       "entry_date": "2026-08-20"
     },
-    "BAC": {
-      "entry": 57.73,
-      "sl": 55.79,
-      "tp": 61.61,
-      "shares": 50.8128,
-      "risk_amount": 98.58,
-      "risk_pct": 1.0,
-      "score": 3,
-      "entry_date": "2026-09-18"
-    },
     "AAPL": {
       "entry": 339.75,
       "sl": 328.94,
@@ -52,6 +42,16 @@
       "risk_pct": 1.0,
       "score": 3,
       "entry_date": "2026-09-24"
+    },
+    "JNJ": {
+      "entry": 269.17,
+      "sl": 261.26,
+      "tp": 284.98,
+      "shares": 12.5788,
+      "risk_amount": 99.5,
+      "risk_pct": 1.0,
+      "score": 3,
+      "entry_date": "2026-09-25"
     }
   },
   "closed_trades": [
@@ -222,6 +222,19 @@
       "equity_after": 10051.26,
       "score": "",
       "risk_pct": ""
+    },
+    {
+      "ticker": "BAC",
+      "entry_date": "2026-09-18",
+      "exit_date": "2026-09-25",
+      "entry": 57.73,
+      "exit": 55.79,
+      "shares": 50.8128,
+      "outcome": "SL",
+      "pnl": -101.46,
+      "equity_after": 9949.8,
+      "score": 3,
+      "risk_pct": 1.0
     }
   ],
   "equity_history": [
@@ -444,10 +457,15 @@
       "date": "2026-09-24",
       "cash_equity": 10051.26,
       "mtm_equity": 10042.34
+    },
+    {
+      "date": "2026-09-25",
+      "cash_equity": 9949.8,
+      "mtm_equity": 10022.57
     }
   ],
   "cooldowns": {
-    "BAC": "2026-08-20",
+    "BAC": "2026-09-25",
     "UNH": "2026-08-20",
     "JPM": "2026-09-18"
   }
