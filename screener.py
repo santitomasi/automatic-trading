@@ -139,7 +139,7 @@ def evaluate(df, cfg):
     # -> confluencia real, no tres indicadores diciendo lo mismo.
     signals["tendencia_corto"] = last["ema_fast"] > last["ema_slow"]          # cruce alcista
     signals["tendencia_mayor"] = last["Close"] > last["ema_trend"]            # sobre EMA200
-    signals["momentum"]        = 45 < last["rsi"] < 70                        # con fuerza, sin sobrecompra
+    signals["momentum"]        = 50 < last["rsi"] < 70                        # con fuerza, sin sobrecompra
     signals["fuerza_tendencia"] = last["adx"] > cfg["adx_min"]               # tendencia con cuerpo
 
     score = sum(signals.values())
