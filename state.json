@@ -1,18 +1,10 @@
 {
-  "equity": 9949.797020722504,
+  "equity": 10031.898925523892,
   "start_equity": 10000.0,
   "peak_equity": 10076.752848062502,
   "created": "2026-07-06",
-  "last_run": "2026-09-29",
+  "last_run": "2026-09-30",
   "open_positions": {
-    "MSFT": {
-      "entry": 487.46,
-      "sl": 462.38,
-      "tp": 537.62,
-      "shares": 3.8615,
-      "risk_amount": 96.85,
-      "entry_date": "2026-08-05"
-    },
     "V": {
       "entry": 365.73,
       "sl": 355.22,
@@ -52,6 +44,16 @@
       "risk_pct": 1.0,
       "score": 3,
       "entry_date": "2026-09-25"
+    },
+    "MSFT": {
+      "entry": 509.22,
+      "sl": 491.33,
+      "tp": 545.01,
+      "shares": 6.0846,
+      "risk_amount": 108.85,
+      "risk_pct": 1.09,
+      "score": 4,
+      "entry_date": "2026-09-30"
     }
   },
   "closed_trades": [
@@ -235,6 +237,19 @@
       "equity_after": 9949.8,
       "score": 3,
       "risk_pct": 1.0
+    },
+    {
+      "ticker": "MSFT",
+      "entry_date": "2026-08-05",
+      "exit_date": "2026-09-30",
+      "entry": 487.46,
+      "exit": 509.22,
+      "shares": 3.8615,
+      "outcome": "TIEMPO",
+      "pnl": 82.1,
+      "equity_after": 10031.9,
+      "score": "",
+      "risk_pct": ""
     }
   ],
   "equity_history": [
@@ -472,6 +487,11 @@
       "date": "2026-09-29",
       "cash_equity": 9949.8,
       "mtm_equity": 10281.39
+    },
+    {
+      "date": "2026-09-30",
+      "cash_equity": 10031.9,
+      "mtm_equity": 10279.47
     }
   ],
   "cooldowns": {
