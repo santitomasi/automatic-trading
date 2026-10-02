@@ -3,7 +3,7 @@
   "start_equity": 10000.0,
   "peak_equity": 10000.0,
   "created": "2026-09-01",
-  "last_run": "2026-10-01",
+  "last_run": "2026-10-02",
   "open_positions": {
     "AAPL": {
       "entry": 316.85,
@@ -20,7 +20,7 @@
       "entry": 507.29,
       "init_stop": 466.34,
       "trail_dist": 40.9487,
-      "highest": 515.65,
+      "highest": 522.85,
       "shares": 4.8842,
       "risk_amount": 200.0,
       "risk_pct": 2.0,
@@ -208,6 +208,11 @@
       "date": "2026-10-01",
       "cash_equity": 9832.64,
       "mtm_equity": 9931.19
+    },
+    {
+      "date": "2026-10-02",
+      "cash_equity": 9832.64,
+      "mtm_equity": 9848.94
     }
   ],
   "cooldowns": {
