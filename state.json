@@ -1,20 +1,10 @@
 {
-  "equity": 9825.443296837393,
+  "equity": 10017.221762253394,
   "start_equity": 10000.0,
   "peak_equity": 10076.752848062502,
   "created": "2026-07-06",
-  "last_run": "2026-10-10",
+  "last_run": "2026-10-13",
   "open_positions": {
-    "V": {
-      "entry": 365.73,
-      "sl": 355.22,
-      "tp": 386.74,
-      "shares": 9.2944,
-      "risk_amount": 97.68,
-      "risk_pct": 1.0,
-      "score": 3,
-      "entry_date": "2026-08-20"
-    },
     "PFE": {
       "entry": 27.79,
       "sl": 26.91,
@@ -54,6 +44,16 @@
       "risk_pct": 0.95,
       "score": 3,
       "entry_date": "2026-10-03"
+    },
+    "JNJ": {
+      "entry": 263.73,
+      "sl": 255.97,
+      "tp": 279.24,
+      "shares": 12.9088,
+      "risk_amount": 100.17,
+      "risk_pct": 1.0,
+      "score": 3,
+      "entry_date": "2026-10-13"
     }
   },
   "closed_trades": [
@@ -274,6 +274,19 @@
       "outcome": "SL",
       "pnl": -102.83,
       "equity_after": 9825.44,
+      "score": 3,
+      "risk_pct": 1.0
+    },
+    {
+      "ticker": "V",
+      "entry_date": "2026-08-20",
+      "exit_date": "2026-10-13",
+      "entry": 365.73,
+      "exit": 386.74,
+      "shares": 9.2944,
+      "outcome": "TP",
+      "pnl": 191.78,
+      "equity_after": 10017.22,
       "score": 3,
       "risk_pct": 1.0
     }
@@ -558,6 +571,11 @@
       "date": "2026-10-10",
       "cash_equity": 9825.44,
       "mtm_equity": 10116.68
+    },
+    {
+      "date": "2026-10-13",
+      "cash_equity": 10017.22,
+      "mtm_equity": 10483.2
     }
   ],
   "cooldowns": {
