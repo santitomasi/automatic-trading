@@ -1,20 +1,10 @@
 {
-  "equity": 10434.658923320525,
+  "equity": 10338.031279331524,
   "start_equity": 10000.0,
   "peak_equity": 10538.185563000525,
   "created": "2026-07-06",
-  "last_run": "2026-10-16",
+  "last_run": "2026-10-17",
   "open_positions": {
-    "NVDA": {
-      "entry": 227.21,
-      "sl": 218.2,
-      "tp": 245.23,
-      "shares": 10.4658,
-      "risk_amount": 94.3,
-      "risk_pct": 0.95,
-      "score": 3,
-      "entry_date": "2026-10-01"
-    },
     "AAPL": {
       "entry": 341.27,
       "sl": 331.16,
@@ -54,6 +44,16 @@
       "risk_pct": 1.0,
       "score": 3,
       "entry_date": "2026-10-15"
+    },
+    "MSFT": {
+      "entry": 539.44,
+      "sl": 522.28,
+      "tp": 573.76,
+      "shares": 5.7425,
+      "risk_amount": 98.54,
+      "risk_pct": 0.95,
+      "score": 4,
+      "entry_date": "2026-10-17"
     }
   },
   "closed_trades": [
@@ -341,6 +341,19 @@
       "equity_after": 10434.66,
       "score": 3,
       "risk_pct": 1.0
+    },
+    {
+      "ticker": "NVDA",
+      "entry_date": "2026-10-01",
+      "exit_date": "2026-10-17",
+      "entry": 227.21,
+      "exit": 218.2,
+      "shares": 10.4658,
+      "outcome": "SL",
+      "pnl": -96.63,
+      "equity_after": 10338.03,
+      "score": 3,
+      "risk_pct": 0.95
     }
   ],
   "equity_history": [
@@ -643,6 +656,11 @@
       "date": "2026-10-16",
       "cash_equity": 10434.66,
       "mtm_equity": 10635.69
+    },
+    {
+      "date": "2026-10-17",
+      "cash_equity": 10338.03,
+      "mtm_equity": 10696.15
     }
   ],
   "cooldowns": {
@@ -650,6 +668,7 @@
     "UNH": "2026-08-20",
     "JPM": "2026-09-18",
     "AAPL": "2026-10-01",
-    "JNJ": "2026-10-15"
+    "JNJ": "2026-10-15",
+    "NVDA": "2026-10-17"
   }
 }
