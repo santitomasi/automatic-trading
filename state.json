@@ -1,9 +1,9 @@
 {
-  "equity": 10646.028699871524,
+  "equity": 10850.956705680024,
   "start_equity": 10000.0,
-  "peak_equity": 10747.618463421524,
+  "peak_equity": 10850.956705680024,
   "created": "2026-07-06",
-  "last_run": "2026-10-24",
+  "last_run": "2026-10-27",
   "open_positions": {
     "AAPL": {
       "entry": 341.27,
@@ -20,16 +20,6 @@
       "sl": 386.12,
       "tp": 415.93,
       "shares": 10.4976,
-      "risk_amount": 104.35,
-      "risk_pct": 1.0,
-      "score": 3,
-      "entry_date": "2026-10-15"
-    },
-    "CVX": {
-      "entry": 217.73,
-      "sl": 211.24,
-      "tp": 230.7,
-      "shares": 16.0781,
       "risk_amount": 104.35,
       "risk_pct": 1.0,
       "score": 3,
@@ -64,6 +54,16 @@
       "risk_pct": 1.0,
       "score": 3,
       "entry_date": "2026-10-24"
+    },
+    "CVX": {
+      "entry": 233.21,
+      "sl": 226.04,
+      "tp": 247.55,
+      "shares": 15.1338,
+      "risk_amount": 108.51,
+      "risk_pct": 1.0,
+      "score": 3,
+      "entry_date": "2026-10-27"
     }
   },
   "closed_trades": [
@@ -390,6 +390,19 @@
       "equity_after": 10646.03,
       "score": 4,
       "risk_pct": 0.95
+    },
+    {
+      "ticker": "CVX",
+      "entry_date": "2026-10-15",
+      "exit_date": "2026-10-27",
+      "entry": 217.73,
+      "exit": 230.7,
+      "shares": 16.0781,
+      "outcome": "TP",
+      "pnl": 204.93,
+      "equity_after": 10850.96,
+      "score": 3,
+      "risk_pct": 1.0
     }
   ],
   "equity_history": [
@@ -722,6 +735,11 @@
       "date": "2026-10-24",
       "cash_equity": 10646.03,
       "mtm_equity": 11126.49
+    },
+    {
+      "date": "2026-10-27",
+      "cash_equity": 10850.96,
+      "mtm_equity": 11119.12
     }
   ],
   "cooldowns": {
