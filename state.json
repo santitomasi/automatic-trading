@@ -1,25 +1,15 @@
 {
-  "equity": 10739.727047099026,
+  "equity": 10944.052385987026,
   "start_equity": 10000.0,
-  "peak_equity": 10850.956705680024,
+  "peak_equity": 10944.052385987026,
   "created": "2026-07-06",
-  "last_run": "2026-10-30",
+  "last_run": "2026-10-31",
   "open_positions": {
     "AAPL": {
       "entry": 341.27,
       "sl": 331.16,
       "tp": 361.5,
       "shares": 10.3211,
-      "risk_amount": 104.35,
-      "risk_pct": 1.0,
-      "score": 3,
-      "entry_date": "2026-10-15"
-    },
-    "V": {
-      "entry": 396.06,
-      "sl": 386.12,
-      "tp": 415.93,
-      "shares": 10.4976,
       "risk_amount": 104.35,
       "risk_pct": 1.0,
       "score": 3,
@@ -64,6 +54,16 @@
       "risk_pct": 1.0,
       "score": 3,
       "entry_date": "2026-10-30"
+    },
+    "MSFT": {
+      "entry": 521.91,
+      "sl": 504.09,
+      "tp": 557.54,
+      "shares": 6.1414,
+      "risk_amount": 109.44,
+      "risk_pct": 1.0,
+      "score": 3,
+      "entry_date": "2026-10-31"
     }
   },
   "closed_trades": [
@@ -414,6 +414,19 @@
       "outcome": "SL",
       "pnl": -111.23,
       "equity_after": 10739.73,
+      "score": 3,
+      "risk_pct": 1.0
+    },
+    {
+      "ticker": "V",
+      "entry_date": "2026-10-15",
+      "exit_date": "2026-10-31",
+      "entry": 396.06,
+      "exit": 415.93,
+      "shares": 10.4976,
+      "outcome": "TP",
+      "pnl": 204.33,
+      "equity_after": 10944.05,
       "score": 3,
       "risk_pct": 1.0
     }
@@ -768,6 +781,11 @@
       "date": "2026-10-30",
       "cash_equity": 10739.73,
       "mtm_equity": 10752.93
+    },
+    {
+      "date": "2026-10-31",
+      "cash_equity": 10944.05,
+      "mtm_equity": 11135.22
     }
   ],
   "cooldowns": {
