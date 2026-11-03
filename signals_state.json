@@ -1,14 +1,13 @@
 {
-  "last_run": "2026-10-31",
+  "last_run": "2026-11-03",
   "active_signals": {
-    "AAPL": 3,
     "MSFT": 3,
-    "V": 4,
+    "V": 3,
     "JNJ": 4,
     "UNH": 4,
     "PFE": 4,
-    "XOM": 3,
-    "CVX": 3,
+    "XOM": 4,
+    "CVX": 4,
     "PG": 4,
     "KO": 4,
     "WMT": 3
