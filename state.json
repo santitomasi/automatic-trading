@@ -3,7 +3,7 @@
   "start_equity": 10000.0,
   "peak_equity": 10944.052385987026,
   "created": "2026-07-06",
-  "last_run": "2026-11-03",
+  "last_run": "2026-11-04",
   "open_positions": {
     "AAPL": {
       "entry": 341.27,
@@ -802,6 +802,11 @@
     },
     {
       "date": "2026-11-03",
+      "cash_equity": 10834.16,
+      "mtm_equity": 10652.45
+    },
+    {
+      "date": "2026-11-04",
       "cash_equity": 10834.16,
       "mtm_equity": 10652.45
     }
