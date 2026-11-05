@@ -1,15 +1,15 @@
 {
-  "equity": 9809.763723144015,
+  "equity": 9902.560665561616,
   "start_equity": 10000.0,
   "peak_equity": 10000.0,
   "created": "2026-09-01",
-  "last_run": "2026-11-04",
+  "last_run": "2026-11-05",
   "open_positions": {
     "MSFT": {
       "entry": 507.29,
       "init_stop": 466.34,
       "trail_dist": 40.9487,
-      "highest": 545.75,
+      "highest": 559.15,
       "shares": 4.8842,
       "risk_amount": 200.0,
       "risk_pct": 2.0,
@@ -20,7 +20,7 @@
       "entry": 370.93,
       "init_stop": 349.9,
       "trail_dist": 21.029,
-      "highest": 426.78,
+      "highest": 436.76,
       "shares": 4.6758,
       "risk_amount": 98.33,
       "risk_pct": 1.0,
@@ -38,27 +38,27 @@
       "score": 4,
       "entry_date": "2026-09-18"
     },
-    "XOM": {
-      "entry": 164.0,
-      "init_stop": 151.7,
-      "trail_dist": 12.2971,
-      "highest": 188.5,
-      "shares": 7.712,
-      "risk_amount": 94.84,
-      "risk_pct": 0.97,
-      "score": 3,
-      "entry_date": "2026-10-06"
-    },
     "JNJ": {
       "entry": 266.17,
       "init_stop": 243.14,
       "trail_dist": 23.029,
-      "highest": 266.17,
+      "highest": 277.35,
       "shares": 4.4342,
       "risk_amount": 102.12,
       "risk_pct": 1.04,
       "score": 4,
       "entry_date": "2026-11-04"
+    },
+    "AAPL": {
+      "entry": 349.51,
+      "init_stop": 319.67,
+      "trail_dist": 29.8434,
+      "highest": 349.51,
+      "shares": 3.3182,
+      "risk_amount": 99.03,
+      "risk_pct": 1.0,
+      "score": 3,
+      "entry_date": "2026-11-05"
     }
   },
   "closed_trades": [
@@ -121,6 +121,21 @@
       "score": 3,
       "risk_pct": 1.0,
       "bars_held": 46
+    },
+    {
+      "ticker": "XOM",
+      "entry_date": "2026-10-06",
+      "exit_date": "2026-11-05",
+      "entry": 164.0,
+      "exit": 176.2,
+      "shares": 7.712,
+      "outcome": "TRAIL",
+      "pnl": 92.8,
+      "R": 0.99,
+      "equity_after": 9902.56,
+      "score": 3,
+      "risk_pct": 0.97,
+      "bars_held": 22
     }
   ],
   "equity_history": [
@@ -358,6 +373,11 @@
       "date": "2026-11-04",
       "cash_equity": 9809.76,
       "mtm_equity": 10338.7
+    },
+    {
+      "date": "2026-11-05",
+      "cash_equity": 9902.56,
+      "mtm_equity": 10657.68
     }
   ],
   "cooldowns": {
