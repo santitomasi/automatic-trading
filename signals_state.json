@@ -1,19 +1,16 @@
 {
-  "last_run": "2026-11-05",
+  "last_run": "2026-11-06",
   "active_signals": {
     "AAPL": 3,
     "MSFT": 4,
-    "V": 3,
+    "V": 4,
     "JNJ": 4,
-    "UNH": 4,
+    "UNH": 3,
     "PFE": 4,
     "XOM": 3,
     "CVX": 3,
     "PG": 4,
     "KO": 4,
-    "WMT": 3,
-    "^GSPC": 3,
-    "^DJI": 3,
-    "^RUT": 3
+    "WMT": 4
   }
 }
