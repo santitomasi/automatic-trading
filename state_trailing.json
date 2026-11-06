@@ -3,7 +3,7 @@
   "start_equity": 10000.0,
   "peak_equity": 10000.0,
   "created": "2026-09-01",
-  "last_run": "2026-11-05",
+  "last_run": "2026-11-06",
   "open_positions": {
     "MSFT": {
       "entry": 507.29,
@@ -20,7 +20,7 @@
       "entry": 370.93,
       "init_stop": 349.9,
       "trail_dist": 21.029,
-      "highest": 436.76,
+      "highest": 442.23,
       "shares": 4.6758,
       "risk_amount": 98.33,
       "risk_pct": 1.0,
@@ -31,7 +31,7 @@
       "entry": 27.46,
       "init_stop": 25.59,
       "trail_dist": 1.8687,
-      "highest": 31.06,
+      "highest": 31.44,
       "shares": 49.9272,
       "risk_amount": 93.3,
       "risk_pct": 0.95,
@@ -42,7 +42,7 @@
       "entry": 266.17,
       "init_stop": 243.14,
       "trail_dist": 23.029,
-      "highest": 277.35,
+      "highest": 281.92,
       "shares": 4.4342,
       "risk_amount": 102.12,
       "risk_pct": 1.04,
@@ -53,7 +53,7 @@
       "entry": 349.51,
       "init_stop": 319.67,
       "trail_dist": 29.8434,
-      "highest": 349.51,
+      "highest": 355.38,
       "shares": 3.3182,
       "risk_amount": 99.03,
       "risk_pct": 1.0,
@@ -378,6 +378,11 @@
       "date": "2026-11-05",
       "cash_equity": 9902.56,
       "mtm_equity": 10657.68
+    },
+    {
+      "date": "2026-11-06",
+      "cash_equity": 9902.56,
+      "mtm_equity": 10414.37
     }
   ],
   "cooldowns": {
