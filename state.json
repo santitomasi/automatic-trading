@@ -1,20 +1,10 @@
 {
-  "equity": 10614.355982705527,
+  "equity": 10720.088299971529,
   "start_equity": 10000.0,
   "peak_equity": 10944.052385987026,
   "created": "2026-07-06",
-  "last_run": "2026-11-05",
+  "last_run": "2026-11-06",
   "open_positions": {
-    "XOM": {
-      "entry": 178.23,
-      "sl": 172.59,
-      "tp": 189.51,
-      "shares": 18.8759,
-      "risk_amount": 106.46,
-      "risk_pct": 1.0,
-      "score": 3,
-      "entry_date": "2026-10-24"
-    },
     "JNJ": {
       "entry": 271.04,
       "sl": 261.28,
@@ -24,16 +14,6 @@
       "risk_pct": 1.0,
       "score": 3,
       "entry_date": "2026-10-30"
-    },
-    "MSFT": {
-      "entry": 521.91,
-      "sl": 504.09,
-      "tp": 557.54,
-      "shares": 6.1414,
-      "risk_amount": 109.44,
-      "risk_pct": 1.0,
-      "score": 3,
-      "entry_date": "2026-10-31"
     },
     "V": {
       "entry": 425.51,
@@ -458,6 +438,32 @@
       "equity_after": 10614.36,
       "score": 3,
       "risk_pct": 1.0
+    },
+    {
+      "ticker": "XOM",
+      "entry_date": "2026-10-24",
+      "exit_date": "2026-11-06",
+      "entry": 178.23,
+      "exit": 172.59,
+      "shares": 18.8759,
+      "outcome": "SL",
+      "pnl": -109.77,
+      "equity_after": 10504.58,
+      "score": 3,
+      "risk_pct": 1.0
+    },
+    {
+      "ticker": "MSFT",
+      "entry_date": "2026-10-31",
+      "exit_date": "2026-11-06",
+      "entry": 521.91,
+      "exit": 557.54,
+      "shares": 6.1414,
+      "outcome": "TP",
+      "pnl": 215.5,
+      "equity_after": 10720.09,
+      "score": 3,
+      "risk_pct": 1.0
     }
   ],
   "equity_history": [
@@ -830,6 +836,11 @@
       "date": "2026-11-05",
       "cash_equity": 10614.36,
       "mtm_equity": 10492.55
+    },
+    {
+      "date": "2026-11-06",
+      "cash_equity": 10720.09,
+      "mtm_equity": 11127.34
     }
   ],
   "cooldowns": {
@@ -841,6 +852,7 @@
     "NVDA": "2026-10-17",
     "MSFT": "2026-10-24",
     "PFE": "2026-10-30",
-    "CVX": "2026-11-05"
+    "CVX": "2026-11-05",
+    "XOM": "2026-11-06"
   }
 }
