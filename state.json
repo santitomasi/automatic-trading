@@ -3,7 +3,7 @@
   "start_equity": 10000.0,
   "peak_equity": 10944.052385987026,
   "created": "2026-07-06",
-  "last_run": "2026-11-10",
+  "last_run": "2026-11-11",
   "open_positions": {
     "JNJ": {
       "entry": 271.04,
@@ -884,6 +884,11 @@
       "date": "2026-11-10",
       "cash_equity": 10607.79,
       "mtm_equity": 11020.91
+    },
+    {
+      "date": "2026-11-11",
+      "cash_equity": 10607.79,
+      "mtm_equity": 11041.24
     }
   ],
   "cooldowns": {
