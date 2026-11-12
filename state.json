@@ -1,9 +1,9 @@
 {
-  "equity": 10607.78541057353,
+  "equity": 10499.29015903753,
   "start_equity": 10000.0,
   "peak_equity": 10944.052385987026,
   "created": "2026-07-06",
-  "last_run": "2026-11-11",
+  "last_run": "2026-11-12",
   "open_positions": {
     "JNJ": {
       "entry": 271.04,
@@ -25,16 +25,6 @@
       "score": 4,
       "entry_date": "2026-11-05"
     },
-    "MSFT": {
-      "entry": 545.18,
-      "sl": 521.78,
-      "tp": 591.97,
-      "shares": 4.5332,
-      "risk_amount": 106.08,
-      "risk_pct": 1.0,
-      "score": 3,
-      "entry_date": "2026-11-10"
-    },
     "AMZN": {
       "entry": 266.93,
       "sl": 252.41,
@@ -54,6 +44,16 @@
       "risk_pct": 1.0,
       "score": 3,
       "entry_date": "2026-11-10"
+    },
+    "AAPL": {
+      "entry": 355.63,
+      "sl": 342.65,
+      "tp": 381.6,
+      "shares": 8.0888,
+      "risk_amount": 104.99,
+      "risk_pct": 1.0,
+      "score": 3,
+      "entry_date": "2026-11-12"
     }
   },
   "closed_trades": [
@@ -497,6 +497,19 @@
       "equity_after": 10607.79,
       "score": 3,
       "risk_pct": 1.0
+    },
+    {
+      "ticker": "MSFT",
+      "entry_date": "2026-11-10",
+      "exit_date": "2026-11-12",
+      "entry": 545.18,
+      "exit": 521.78,
+      "shares": 4.5332,
+      "outcome": "SL",
+      "pnl": -108.5,
+      "equity_after": 10499.29,
+      "score": 3,
+      "risk_pct": 1.0
     }
   ],
   "equity_history": [
@@ -889,6 +902,11 @@
       "date": "2026-11-11",
       "cash_equity": 10607.79,
       "mtm_equity": 11041.24
+    },
+    {
+      "date": "2026-11-12",
+      "cash_equity": 10499.29,
+      "mtm_equity": 10889.72
     }
   ],
   "cooldowns": {
@@ -898,7 +916,7 @@
     "AAPL": "2026-11-05",
     "JNJ": "2026-10-15",
     "NVDA": "2026-10-17",
-    "MSFT": "2026-10-24",
+    "MSFT": "2026-11-12",
     "PFE": "2026-10-30",
     "CVX": "2026-11-05",
     "XOM": "2026-11-06",
