@@ -1,18 +1,17 @@
 {
-  "last_run": "2026-11-12",
+  "last_run": "2026-11-13",
   "active_signals": {
     "AAPL": 3,
     "AMZN": 3,
     "V": 4,
     "JNJ": 4,
     "UNH": 4,
-    "PFE": 4,
+    "PFE": 3,
     "XOM": 3,
     "CVX": 3,
     "PG": 4,
     "KO": 4,
     "WMT": 4,
-    "^DJI": 3,
-    "^RUT": 3
+    "^DJI": 3
   }
 }
