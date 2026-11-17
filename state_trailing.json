@@ -3,13 +3,13 @@
   "start_equity": 10000.0,
   "peak_equity": 10290.542094252307,
   "created": "2026-09-01",
-  "last_run": "2026-11-14",
+  "last_run": "2026-11-17",
   "open_positions": {
     "JNJ": {
       "entry": 266.17,
       "init_stop": 243.14,
       "trail_dist": 23.029,
-      "highest": 288.11,
+      "highest": 290.25,
       "shares": 4.4342,
       "risk_amount": 102.12,
       "risk_pct": 1.04,
@@ -31,7 +31,7 @@
       "entry": 422.16,
       "init_stop": 389.84,
       "trail_dist": 32.3178,
-      "highest": 430.18,
+      "highest": 430.99,
       "shares": 6.3369,
       "risk_amount": 204.8,
       "risk_pct": 2.0,
@@ -53,7 +53,7 @@
       "entry": 346.19,
       "init_stop": 321.31,
       "trail_dist": 24.8752,
-      "highest": 346.19,
+      "highest": 346.52,
       "shares": 4.1369,
       "risk_amount": 102.91,
       "risk_pct": 1.0,
@@ -458,6 +458,11 @@
       "date": "2026-11-14",
       "cash_equity": 10290.54,
       "mtm_equity": 10422.61
+    },
+    {
+      "date": "2026-11-17",
+      "cash_equity": 10290.54,
+      "mtm_equity": 10339.42
     }
   ],
   "cooldowns": {
