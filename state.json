@@ -1,9 +1,9 @@
 {
-  "equity": 10499.29015903753,
+  "equity": 10901.52138203003,
   "start_equity": 10000.0,
   "peak_equity": 10944.052385987026,
   "created": "2026-07-06",
-  "last_run": "2026-11-14",
+  "last_run": "2026-11-17",
   "open_positions": {
     "JNJ": {
       "entry": 271.04,
@@ -14,16 +14,6 @@
       "risk_pct": 1.0,
       "score": 3,
       "entry_date": "2026-10-30"
-    },
-    "PG": {
-      "entry": 162.06,
-      "sl": 157.65,
-      "tp": 170.87,
-      "shares": 46.5355,
-      "risk_amount": 205.22,
-      "risk_pct": 1.93,
-      "score": 4,
-      "entry_date": "2026-11-05"
     },
     "AMZN": {
       "entry": 266.93,
@@ -54,6 +44,16 @@
       "risk_pct": 1.0,
       "score": 3,
       "entry_date": "2026-11-12"
+    },
+    "V": {
+      "entry": 426.46,
+      "sl": 413.38,
+      "tp": 452.62,
+      "shares": 16.669,
+      "risk_amount": 218.03,
+      "risk_pct": 2.0,
+      "score": 4,
+      "entry_date": "2026-11-17"
     }
   },
   "closed_trades": [
@@ -510,6 +510,19 @@
       "equity_after": 10499.29,
       "score": 3,
       "risk_pct": 1.0
+    },
+    {
+      "ticker": "PG",
+      "entry_date": "2026-11-05",
+      "exit_date": "2026-11-17",
+      "entry": 162.06,
+      "exit": 170.87,
+      "shares": 46.5355,
+      "outcome": "TP",
+      "pnl": 402.23,
+      "equity_after": 10901.52,
+      "score": 4,
+      "risk_pct": 1.93
     }
   ],
   "equity_history": [
@@ -917,6 +930,11 @@
       "date": "2026-11-14",
       "cash_equity": 10499.29,
       "mtm_equity": 11083.38
+    },
+    {
+      "date": "2026-11-17",
+      "cash_equity": 10901.52,
+      "mtm_equity": 11024.16
     }
   ],
   "cooldowns": {
