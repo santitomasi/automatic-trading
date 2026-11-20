@@ -1,21 +1,10 @@
 {
-  "equity": 10290.542094252307,
+  "equity": 10191.097436494147,
   "start_equity": 10000.0,
-  "peak_equity": 10290.542094252307,
+  "peak_equity": 10294.019857266207,
   "created": "2026-09-01",
-  "last_run": "2026-11-19",
+  "last_run": "2026-11-20",
   "open_positions": {
-    "JNJ": {
-      "entry": 266.17,
-      "init_stop": 243.14,
-      "trail_dist": 23.029,
-      "highest": 290.25,
-      "shares": 4.4342,
-      "risk_amount": 102.12,
-      "risk_pct": 1.04,
-      "score": 4,
-      "entry_date": "2026-11-04"
-    },
     "AAPL": {
       "entry": 349.51,
       "init_stop": 319.67,
@@ -42,19 +31,8 @@
       "entry": 266.66,
       "init_stop": 234.87,
       "trail_dist": 31.7865,
-      "highest": 268.29,
+      "highest": 274.0,
       "shares": 3.2374,
-      "risk_amount": 102.91,
-      "risk_pct": 1.0,
-      "score": 3,
-      "entry_date": "2026-11-14"
-    },
-    "JPM": {
-      "entry": 346.19,
-      "init_stop": 321.31,
-      "trail_dist": 24.8752,
-      "highest": 346.52,
-      "shares": 4.1369,
       "risk_amount": 102.91,
       "risk_pct": 1.0,
       "score": 3,
@@ -181,6 +159,36 @@
       "score": 4,
       "risk_pct": 2.0,
       "bars_held": 54
+    },
+    {
+      "ticker": "JNJ",
+      "entry_date": "2026-11-04",
+      "exit_date": "2026-11-20",
+      "entry": 266.17,
+      "exit": 267.22,
+      "shares": 4.4342,
+      "outcome": "TRAIL",
+      "pnl": 3.48,
+      "R": 0.05,
+      "equity_after": 10294.02,
+      "score": 4,
+      "risk_pct": 1.04,
+      "bars_held": 12
+    },
+    {
+      "ticker": "JPM",
+      "entry_date": "2026-11-14",
+      "exit_date": "2026-11-20",
+      "entry": 346.19,
+      "exit": 321.64,
+      "shares": 4.1369,
+      "outcome": "TRAIL",
+      "pnl": -102.92,
+      "R": -0.99,
+      "equity_after": 10191.1,
+      "score": 3,
+      "risk_pct": 1.0,
+      "bars_held": 4
     }
   ],
   "equity_history": [
@@ -473,11 +481,16 @@
       "date": "2026-11-19",
       "cash_equity": 10290.54,
       "mtm_equity": 10197.43
+    },
+    {
+      "date": "2026-11-20",
+      "cash_equity": 10191.1,
+      "mtm_equity": 10033.86
     }
   ],
   "cooldowns": {
     "BAC": "2026-09-16",
-    "JPM": "2026-09-17",
+    "JPM": "2026-11-20",
     "JNJ": "2026-10-06"
   }
 }
