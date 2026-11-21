@@ -1,9 +1,9 @@
 {
-  "equity": 10568.08854205003,
+  "equity": 10352.297437266032,
   "start_equity": 10000.0,
   "peak_equity": 10944.052385987026,
   "created": "2026-07-06",
-  "last_run": "2026-11-20",
+  "last_run": "2026-11-21",
   "open_positions": {
     "JNJ": {
       "entry": 271.04,
@@ -14,26 +14,6 @@
       "risk_pct": 1.0,
       "score": 3,
       "entry_date": "2026-10-30"
-    },
-    "AMZN": {
-      "entry": 266.93,
-      "sl": 252.41,
-      "tp": 295.96,
-      "shares": 7.3056,
-      "risk_amount": 106.08,
-      "risk_pct": 1.0,
-      "score": 3,
-      "entry_date": "2026-11-10"
-    },
-    "AAPL": {
-      "entry": 355.63,
-      "sl": 342.65,
-      "tp": 381.6,
-      "shares": 8.0888,
-      "risk_amount": 104.99,
-      "risk_pct": 1.0,
-      "score": 3,
-      "entry_date": "2026-11-12"
     }
   },
   "closed_trades": [
@@ -529,6 +509,32 @@
       "equity_after": 10568.09,
       "score": 4,
       "risk_pct": 2.0
+    },
+    {
+      "ticker": "AMZN",
+      "entry_date": "2026-11-10",
+      "exit_date": "2026-11-21",
+      "entry": 266.93,
+      "exit": 252.41,
+      "shares": 7.3056,
+      "outcome": "SL",
+      "pnl": -107.97,
+      "equity_after": 10460.11,
+      "score": 3,
+      "risk_pct": 1.0
+    },
+    {
+      "ticker": "AAPL",
+      "entry_date": "2026-11-12",
+      "exit_date": "2026-11-21",
+      "entry": 355.63,
+      "exit": 342.65,
+      "shares": 8.0888,
+      "outcome": "SL",
+      "pnl": -107.82,
+      "equity_after": 10352.3,
+      "score": 3,
+      "risk_pct": 1.0
     }
   ],
   "equity_history": [
@@ -956,19 +962,25 @@
       "date": "2026-11-20",
       "cash_equity": 10568.09,
       "mtm_equity": 10403.4
+    },
+    {
+      "date": "2026-11-21",
+      "cash_equity": 10352.3,
+      "mtm_equity": 10346.03
     }
   ],
   "cooldowns": {
     "BAC": "2026-09-25",
     "UNH": "2026-11-19",
     "JPM": "2026-09-18",
-    "AAPL": "2026-11-05",
+    "AAPL": "2026-11-21",
     "JNJ": "2026-10-15",
     "NVDA": "2026-10-17",
     "MSFT": "2026-11-12",
     "PFE": "2026-10-30",
     "CVX": "2026-11-05",
     "XOM": "2026-11-06",
-    "V": "2026-11-19"
+    "V": "2026-11-19",
+    "AMZN": "2026-11-21"
   }
 }
